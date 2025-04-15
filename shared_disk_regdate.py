@@ -1,3 +1,4 @@
+### Скрипт предназначен для определения даты регистрации общих дисков
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from datetime import datetime
