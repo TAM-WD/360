@@ -1,4 +1,4 @@
-### Скрипт предназначен для получения публичных ссылок на Дисках организации, только для заблокированных пользователей. Используются:
+### Скрипт предназначен для получения публичных ссылок на Дисках организации среди заблокированных пользователей. Используются:
 # - получение списка юзеров организации https://yandex.ru/dev/api360/doc/ru/ref/UserService/UserService_List
 # - сервисные приложения https://yandex.ru/support/yandex-360/business/admin/ru/security-service-applications
 # - API Диска https://yandex.ru/dev/disk-api/doc/ru/reference/meta
