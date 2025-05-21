@@ -6,6 +6,9 @@
 - [clear_disk_for_user](https://github.com/TAM-WD/360/blob/main/clear_disk_for_user.py) - удаление файлов федеративного пользователя с Диска по user_id (uid).
 - [disk_space_of_shared](https://github.com/TAM-WD/360/blob/main/disk_space_of_shared.py) - получение занятого/свободного места на Общих Дисках организации.
 - [disk_space_of_users](https://github.com/TAM-WD/360/blob/main/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO + SCIM.
+- [list_of_groups](https://github.com/TAM-WD/360/blob/main/list_of_groups.py) - получение списка всех групп в организации.
+- [list_of_users](https://github.com/TAM-WD/360/blob/main/list_of_users.py) - получение списка всех пользователей в организации.
+- [list_of_users](https://github.com/TAM-WD/360/blob/main/list_of_users_scim.py) - получение списка всех пользователей в организации с помощью SCIM-API.
 - [public_links_of_users](https://github.com/TAM-WD/360/blob/main/public_links_of_users.py) - получение списка публичных ссылок среди всех пользователей на Дисках организации.
 - [public_links_of_blocked_users](https://github.com/TAM-WD/360/blob/main/public_links_of_blocked_users.py) - получение списка публичных ссылок среди заблокированных пользователей на Дисках организации.
 - [regdate_of_shared](https://github.com/TAM-WD/360/blob/main/regdate_of_shared.py) - определение даты регистрации Общих Дисков в организации.
