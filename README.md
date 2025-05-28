@@ -4,9 +4,12 @@
 Ниже указаны цели каждого скрипта и примеры применения:
 - [ban_status_of_user](https://github.com/TAM-WD/360/blob/main/ban_status_of_user.py) - блокировка, разблокировка и проверка текущего статуса федеративного пользователя (заблокирован/разблокирован) по UID.
 - [clear_disk_for_user](https://github.com/TAM-WD/360/blob/main/clear_disk_for_user.py) - удаление файлов федеративного пользователя с Диска по user_id (uid).
+- [compare_disks_structures](https://github.com/TAM-WD/360/blob/main/compare_disks_structures.py) - cравнение структуры файлов и папок (деревьев) между двумя Дисками.
+- [disk_resource_id_duplicates](https://github.com/TAM-WD/360/blob/main/disk_resource_id_duplicates.py) - поиск дубликатов resource_id в Диске.
 - [disk_space_of_shared](https://github.com/TAM-WD/360/blob/main/disk_space_of_shared.py) - получение занятого/свободного места на Общих Дисках организации.
 - [disk_space_of_users](https://github.com/TAM-WD/360/blob/main/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO + SCIM.
 - [list_of_groups](https://github.com/TAM-WD/360/blob/main/list_of_groups.py) - получение списка всех групп в организации.
+- [list_of_tracker_users](https://github.com/TAM-WD/360/blob/main/list_of_tracker_users.py) - получение списка пользователей Трекера в организации.
 - [list_of_users](https://github.com/TAM-WD/360/blob/main/list_of_users.py) - получение списка всех пользователей в организации.
 - [list_of_users_scim](https://github.com/TAM-WD/360/blob/main/list_of_users_scim.py) - получение списка всех пользователей в организации с помощью SCIM-API.
 - [public_links_of_users](https://github.com/TAM-WD/360/blob/main/public_links_of_users.py) - получение списка публичных ссылок среди всех пользователей на Дисках организации.
