@@ -18,7 +18,8 @@ def scim_get_user_info(user_id):
     headers = {'Authorization': f'Bearer {SCIM_TOKEN}'}
     request = requests.get(url,headers=headers)
     response = request.json()
-    print(f'get {request.status_code}')
+    print(f'scim_get_user_info | {request.status_code} | {user_id}')
+    file.write(f"scim_get_user_info | {request.status_code} | {user_id}\n")
     return response
 
 def scim_patch_user(user_id, type, value):
@@ -44,7 +45,8 @@ def scim_patch_user(user_id, type, value):
         return print('No such type')
     
     request = requests.patch(url,headers=headers,json=body)
-    return request.status_code
+    file.write(f"scim_patch_user | {request.status_code} | {user_id}, {type}, {value}\n")
+    return
 
 def api360_patch_nickname(user_id, new_nickname):
     url = f'https://api360.yandex.net/directory/v1/org/{ORGID}/users/{user_id}'
@@ -53,12 +55,13 @@ def api360_patch_nickname(user_id, new_nickname):
         'nickname': new_nickname
     }
     request = requests.patch(url,headers=headers, json=body)
-    return request.status_code
+    file.write(f"api360_patch_nickname | {request.status_code} | {user_id}, {new_nickname}\n")
+    return
 
 if __name__ == '__main__':
     start_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     dir = os.path.dirname(__file__)
-    file_path = os.path.abspath(f'{dir}/user_{USER_ID}_{start_time}')
+    file_path = os.path.abspath(f'{dir}/user_{USER_ID}_{start_time}.log')
     file = open(file_path, mode='w', newline='', encoding='utf-8')
     response = scim_get_user_info(USER_ID)
     file.write(f"response start: {response}\n\n")
