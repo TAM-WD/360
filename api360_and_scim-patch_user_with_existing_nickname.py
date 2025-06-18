@@ -45,6 +45,7 @@ def scim_patch_user(user_id, type, value):
         return print('No such type')
     
     request = requests.patch(url,headers=headers,json=body)
+    request.raise_for_status()
     file.write(f"scim_patch_user | {request.status_code} | {user_id}, {type}, {value}\n")
     return
 
