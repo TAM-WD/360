@@ -65,7 +65,7 @@ def get_disks_info(offset):
     return print(f'Got disks info | offset: {offset}')
 
 if __name__ == '__main__':
-    now = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     dir = os.path.dirname(__file__)
     file_path = os.path.abspath(f'{dir}/shared_disk_space_{now}.csv')
     with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
