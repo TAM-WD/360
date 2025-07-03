@@ -1,3 +1,5 @@
+### Скрипт предназначен для получения доступов групп организации к ссылкам пользователей
+
 import os
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -5,8 +7,8 @@ import csv
 from datetime import datetime
 
 
-TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read или cloud_api:disk.info
-ORG_TOKEN = '' # токен OAuth приложения с доступом к чтению групп
+TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read
+ORG_TOKEN = '' # токен OAuth приложения с доступом к чтению групп и пользователей
 ORGID = '' # ID организации
 
 LIMIT = 1000
