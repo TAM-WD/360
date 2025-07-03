@@ -1,11 +1,13 @@
+### Скрипт предназначен для получения доступов к ссылкам в общих дисках
+
 import os
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import csv
 from datetime import datetime, timedelta
 
-TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read или cloud_api:disk.info
-ORG_TOKEN = '' # токен OAuth приложения с доступом к чтению групп
+TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read
+ORG_TOKEN = '' # токен OAuth приложения с доступом к чтению групп и сотрудников
 ORGID = '' # ID организации
 DOMAIN = '' # Домен организации
 
