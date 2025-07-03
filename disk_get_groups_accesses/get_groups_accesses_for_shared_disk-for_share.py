@@ -1,4 +1,4 @@
-### Скрипт предназначен для получения информации о группах, на которые назначен доступ к Общим Дискам
+### Скрипт предназначен для получения информации о группах, на которые назначен доступ к общим дискам
 
 import os
 import requests
@@ -6,7 +6,7 @@ from requests.adapters import HTTPAdapter, Retry
 import csv
 from datetime import datetime
 
-TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read или cloud_api:disk.info
+TOKEN_DISK = '' # токен OAuth приложения администратора организации, с правами cloud_api:disk.read
 TOKEN_GROUPS = '' # токен OAuth приложения с доступом к чтению групп
 ORGID = '' # ID организации
 
