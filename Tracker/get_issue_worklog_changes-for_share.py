@@ -50,6 +50,7 @@ if __name__ == '__main__':
         writer.writeheader()
         date = f'>{DATE_START}'
         tickets = tracker_search_tickets(user,date)
+        print(tickets)
         for ticket in tickets:
             key = ticket.get('key')
             worklogs = tracker_get_worklogs_by_ticket(key)
