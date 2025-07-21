@@ -61,6 +61,7 @@ if __name__ == '__main__':
         writer = csv.DictWriter(csv_file, field_names, extrasaction='ignore', delimiter=';')
         writer.writeheader()
         worklogs = tracket_get_worklogs_post(user,DATE_START,DATE_FINISH)
+        print(worklogs)
         for log in worklogs:
             issue = log.get('issue')
             createdBy = log.get('createdBy')
