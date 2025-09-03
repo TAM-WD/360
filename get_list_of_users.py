@@ -39,6 +39,7 @@ if __name__ == '__main__':
             'middleName',
             'position',
             'isEnabled',
+            'isEnabledUpdatedAt',
             'isAdmin',
             'departmentId',
             'gender',
