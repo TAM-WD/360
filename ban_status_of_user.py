@@ -44,7 +44,7 @@ def scim_disable_user(user_id): # запрос для блокировки юз�
 
 if __name__ == '__main__':
     is_active = scim_get_ban_status(uid)
-    if is_active == True:
+    if is_active == False:
         scim_enable_user(uid)
         ban_need = True
     else:
