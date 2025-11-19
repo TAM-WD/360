@@ -9,8 +9,8 @@ from datetime import datetime
 import time
 
 PERPAGE = 1000
-TOKEN = 'y0__xCDgbKmqveAAhjswjsgoaWxjxUokspuFTawaJsKwd1te6oaLLEzVQ'  # токен OAuth приложения администратора организации, с правами directory:read_users и security:domain_sessions_write
-ORGID = '7109889'  # ID организации
+TOKEN = ''  # токен OAuth приложения администратора организации, с правами directory:read_users и security:domain_sessions_write
+ORGID = ''  # ID организации
 
 def api360_get_users(orgid, page):
     """Получение списка пользователей организации"""
