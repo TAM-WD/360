@@ -286,18 +286,16 @@ class RPSMonitor:
         self.interval_stats = []
         self.last_log_time = time.time()
         
-        # НОВОЕ: Флаг остановки
         self.stop_event = Event()
         
         self.monitor_thread = threading.Thread(
             target=self._monitor_loop,
-            daemon=False,  # ← ИЗМЕНЕНО: non-daemon
+            daemon=False,
             name='RPSMonitor'
         )
         self.monitor_thread.start()
     
     def stop(self):
-        """Graceful остановка мониторинга"""
         self.stop_event.set()
         if self.monitor_thread.is_alive():
             self.monitor_thread.join(timeout=5)
@@ -307,7 +305,6 @@ class RPSMonitor:
         
         try:
             while not self.stop_event.is_set():
-                # Используем wait вместо sleep для возможности прерывания
                 if self.stop_event.wait(timeout=RPS_MONITOR_INTERVAL):
                     break
                 
@@ -908,7 +905,6 @@ class RateLimiter:
     def acquire(self, tokens: int = 1):
         sleep_time = 0
         
-        # ИСПРАВЛЕНИЕ: Вычисляем sleep_time ВНУТРИ блокировки, но спим СНАРУЖИ
         with self.lock:
             now = time.time()
             elapsed = now - self.last_update
@@ -916,17 +912,14 @@ class RateLimiter:
             self.last_update = now
             
             if self.tokens < tokens:
-                # Вычисляем время сна, но НЕ спим здесь!
                 sleep_time = (tokens - self.tokens) / self.max_rps
             else:
                 self.tokens -= tokens
                 self.total_requests += tokens
         
-        # КРИТИЧНО: Sleep СНАРУЖИ блокировки!
         if sleep_time > 0:
             time.sleep(sleep_time)
             
-            # После сна - повторно захватываем блокировку и списываем токены
             with self.lock:
                 now = time.time()
                 elapsed = now - self.last_update
@@ -991,7 +984,7 @@ class TaskManager:
         self.max_workers = max_workers
         self.max_helpers = max_helpers
         self.workers: Dict[str, WorkerActivity] = {}
-        self.workers_lock = threading.RLock()  # ← МЕНЯЕМ Lock на RLock
+        self.workers_lock = threading.RLock()
         
         self.folder_queue = queue.Queue()
         self.completed_paths: Set[str] = set()
@@ -1002,8 +995,7 @@ class TaskManager:
         self.active_recursive_tasks: Dict[str, FolderTask] = {}
         self.active_tasks_lock = Lock()
         
-        # НОВОЕ: Отслеживание задач по пользователям
-        self.user_tasks_count: Dict[str, int] = {}  # uid -> количество активных задач
+        self.user_tasks_count: Dict[str, int] = {}
         self.user_tasks_lock = Lock()
         
         self.shutdown_event = Event()
@@ -1016,13 +1008,11 @@ class TaskManager:
         self.empty_monitor_iterations = 0
         self.paths_added = 0
     
-    # НОВОЕ: Инкремент счетчика задач пользователя
     def increment_user_tasks(self, user_uid: str):
         with self.user_tasks_lock:
             self.user_tasks_count[user_uid] = self.user_tasks_count.get(user_uid, 0) + 1
             log_info(f'📊 [TASK_TRACK] UID {user_uid}: задач +1 = {self.user_tasks_count[user_uid]}')
     
-    # НОВОЕ: Декремент счетчика задач пользователя
     def decrement_user_tasks(self, user_uid: str):
         with self.user_tasks_lock:
             if user_uid in self.user_tasks_count:
@@ -1033,12 +1023,10 @@ class TaskManager:
                     del self.user_tasks_count[user_uid]
                     log_info(f'✅ [TASK_TRACK] UID {user_uid}: все задачи завершены')
     
-    # НОВОЕ: Получить количество активных задач пользователя
     def get_user_tasks_count(self, user_uid: str) -> int:
         with self.user_tasks_lock:
             return self.user_tasks_count.get(user_uid, 0)
     
-    # НОВОЕ: Ждать завершения всех задач пользователя
     def wait_for_user_tasks(self, user_uid: str, timeout: int = 600, check_interval: int = 2):
         start_time = time.time()
         wait_iterations = 0
@@ -1058,8 +1046,7 @@ class TaskManager:
                 stuck_iterations = 0
             last_tasks_count = tasks_count
         
-            # НОВОЕ: Подробная диагностика при зависании
-            if stuck_iterations >= 30:  # 60 секунд
+            if stuck_iterations >= 30:
                 queue_size = self.folder_queue.qsize()
             
                 with self.paths_lock:
@@ -1078,7 +1065,6 @@ class TaskManager:
                 log_warning(f'    Завершено: {completed}')
                 log_warning(f'    Активных хелперов: {helpers}')
             
-                # НОВОЕ: Если очередь пустая И ничего не обрабатывается
                 if queue_size == 0 and in_progress == 0:
                     log_warning(f'⚠️ [WAIT] UID {user_uid}: Очередь и in_progress пусты!')
                     log_warning(f'⚠️ [WAIT] UID {user_uid}: Принудительный сброс {tasks_count} потерянных задач')
@@ -1089,14 +1075,11 @@ class TaskManager:
                 
                     return True
             
-                # НОВОЕ: Если очередь есть, но хелперы простаивают
                 if queue_size > 0 and helpers > 0:
                     log_warning(f'⚠️ [WAIT] UID {user_uid}: Очередь={queue_size}, но задачи не берутся!')
                     log_warning(f'⚠️ [WAIT] UID {user_uid}: Возможно, все пути в in_progress или completed')
                 
-                    # Очищаем queued_paths от дубликатов
                     with self.paths_lock:
-                        # Создаем временную очередь для проверки
                         temp_tasks = []
                         cleaned = 0
                     
@@ -1104,7 +1087,6 @@ class TaskManager:
                             while True:
                                 task = self.folder_queue.get_nowait()
                             
-                                # Если путь уже обработан или в процессе - пропускаем
                                 if task.path in self.completed_paths or task.path in self.in_progress_paths:
                                     self.queued_paths.discard(task.path)
                                     if task.user_uid:
@@ -1115,7 +1097,6 @@ class TaskManager:
                         except queue.Empty:
                             pass
                     
-                        # Возвращаем валидные задачи обратно
                         for task in temp_tasks:
                             self.folder_queue.put(task)
                     
@@ -1131,7 +1112,6 @@ class TaskManager:
         
             time.sleep(check_interval)
     
-        # Timeout
         remaining = self.get_user_tasks_count(user_uid)
         log_warning(f'⚠️ [WAIT] UID {user_uid}: timeout после {timeout}с, осталось {remaining} задач')
     
@@ -1217,21 +1197,17 @@ class TaskManager:
         added = False
     
         with self.paths_lock:
-            # Проверяем ВСЕ условия
             if (task.path not in self.completed_paths and 
                 task.path not in self.in_progress_paths and
                 task.path not in self.queued_paths):
             
-                # Добавляем в queued_paths ПЕРВЫМ
                 self.queued_paths.add(task.path)
                 added = True
             else:
-                # Дубликат обнаружен ДО добавления в очередь
                 status = "completed" if task.path in self.completed_paths else \
                          "in_progress" if task.path in self.in_progress_paths else "queued"
                 log_info(f'⚠️ [DUPLICATE_PREVENTED] {task.path}: {status}')
     
-        # КРИТИЧНО: increment ТОЛЬКО если реально добавили
         if added:
             if task.user_uid:
                 self.increment_user_tasks(task.user_uid)
@@ -1256,7 +1232,6 @@ class TaskManager:
             with self.paths_lock:
                 self.queued_paths.discard(task.path)
             
-                # ИСПРАВЛЕНИЕ: Проверяем ВСЕ причины пропуска
                 skip_reason = None
             
                 if task.path in self.completed_paths:
@@ -1265,13 +1240,11 @@ class TaskManager:
                     skip_reason = "in_progress"
             
                 if skip_reason:
-                    # КРИТИЧНО: Декремент ДЛЯ ЛЮБОЙ причины пропуска
                     if task.user_uid:
                         self.decrement_user_tasks(task.user_uid)
                         log_info(f'⚠️ [TASK_SKIP] {task.path}: {skip_reason} для UID {task.user_uid}')
                     return None
             
-                # Путь свободен, берем в работу
                 self.in_progress_paths.add(task.path)
                 return task
             
@@ -1388,17 +1361,12 @@ def get_files_recursive_single_folder_streaming(token_manager, path, search_name
                                                depth=0, files_count_ref=None):
     worker_id = threading.current_thread().name
     
-    # УБИРАЕМ локальную очередь!
-    # folders_queue = queue.Queue()
-    # folders_queue.put((path, depth))
-    
     batch = []
     
     if task_manager:
         task_manager.update_worker_activity(worker_id, f'Обход: {path}')
     
     try:
-        # Обрабатываем ТОЛЬКО текущую папку
         log_info(f'📁 [ITER] {worker_id}: Обход {path} (глубина: {depth})')
         
         offset = 0
@@ -1460,7 +1428,6 @@ def get_files_recursive_single_folder_streaming(token_manager, path, search_name
             if task_manager:
                 task_manager.update_worker_activity(worker_id, f'Обход: {path} ({offset}/{total})')
         
-        # НОВОЕ: Добавляем подпапки в ГЛОБАЛЬНУЮ очередь
         if subdirs_found and task_manager and depth < MAX_RECURSION_DEPTH:
             log_info(f'📁 [ITER] {worker_id}: Найдено {len(subdirs_found)} подпапок в {path}, добавляем в очередь')
             
@@ -1534,7 +1501,6 @@ def get_files_with_dynamic_distribution(token_manager, path='disk:/', search_nam
         log_info(f'📁 [FALLBACK] Найдено {len(folders)} папок, {files_count} файлов для {user_email}')
         
         if folders and task_manager:
-            # НОВОЕ: Регистрируем задачи ПЕРЕД добавлением в очередь
             log_info(f'📁 [FALLBACK] Добавление {len(folders)} папок для UID {user_uid}')
             
             for folder_path in folders:
@@ -1563,7 +1529,7 @@ def disk_get_files_paginated_streaming(token_manager, search_name='',
     error_count = 0
     files_count = 0
     batch = []
-    max_iterations = 1000  # НОВОЕ: Защита от бесконечного цикла
+    max_iterations = 1000
     iterations = 0
     
     try:
@@ -1608,7 +1574,6 @@ def disk_get_files_paginated_streaming(token_manager, search_name='',
                 time.sleep(3)
                 continue
             
-            # ИСПРАВЛЕНИЕ: ВСЕ ошибки → fallback
             if response.status_code == 500:
                 error_count += 1
                 if error_count >= 2:
@@ -1619,10 +1584,9 @@ def disk_get_files_paginated_streaming(token_manager, search_name='',
                 continue
             
             if response.status_code != 200:
-                # ИСПРАВЛЕНИЕ: Любой не-200 код → fallback
                 log_warning(f'⚠️ [{user_email}] HTTP {response.status_code}, переход на fallback')
                 use_fallback = True
-                break  # ТЕПЕРЬ С use_fallback = True!
+                break
             
             data = response.json()
             items = data.get('items', [])
@@ -1705,7 +1669,6 @@ def global_helper_worker(helper_id: int):
         last_log_time = time.time()
         
         while True:
-            # ИСПРАВЛЕНИЕ: Проверяем shutdown БЕЗ условия consecutive_empty
             if task_manager and task_manager.shutdown_event.is_set():
                 queue_size = task_manager.folder_queue.qsize()
                 if queue_size == 0:
@@ -1717,14 +1680,13 @@ def global_helper_worker(helper_id: int):
             if folder_task is None:
                 consecutive_empty += 1
                 
-                # ИСПРАВЛЕНИЕ: Логируем реже (каждую минуту)
                 now = time.time()
                 if now - last_log_time >= 60 or consecutive_empty == 30:
                     queue_size = task_manager.folder_queue.qsize() if task_manager else 0
                     log_info(f'⏳ [{worker_name}] Пусто {consecutive_empty}, очередь={queue_size}')
                     last_log_time = now
                 
-                continue  # ← КРИТИЧНО: Продолжаем крутиться!
+                continue
             
             consecutive_empty = 0
             tasks_processed += 1
@@ -1750,7 +1712,6 @@ def global_helper_worker(helper_id: int):
             except Exception as e:
                 log_error(f'❌ [{worker_name}] Ошибка: {e}')
             finally:
-                # Декремент счетчика в любом случае
                 if task_manager and folder_task.user_uid:
                     task_manager.decrement_user_tasks(folder_task.user_uid)
         
@@ -1768,7 +1729,6 @@ def process_user(user, writer):
     start_time = time.time()
     worker_id = threading.current_thread().name
     
-    # DEBUG: Логируем запуск потока
     log_info(f'🔵 [{worker_id}] ЗАПУСК process_user')
     
     if task_manager:
@@ -1821,12 +1781,10 @@ def process_user(user, writer):
             email, uid, is_enabled, writer
         )
         
-        # Ждем завершения всех задач этого пользователя после fallback
         if task_manager:
             pending_tasks = task_manager.get_user_tasks_count(uid)
             if pending_tasks > 0:
                 log_info(f'⏳ [{email}] Ожидание завершения {pending_tasks} задач fallback...')
-                # ИСПРАВЛЕНИЕ: Увеличен timeout до 15 минут для больших дисков
                 task_manager.wait_for_user_tasks(uid, timeout=900, check_interval=2)
         
         if files_count == 0:
@@ -1906,10 +1864,8 @@ def main():
     
     log_info('🚀 Запуск глобальных хелперов...')
 
-    # ИСПРАВЛЕНИЕ: Убираем daemon=True у потоков
     class NonDaemonThreadPoolExecutor(ThreadPoolExecutor):
         def _adjust_thread_count(self):
-            # Переопределяем, чтобы потоки были non-daemon
             def worker():
                 try:
                     while True:
@@ -1929,7 +1885,6 @@ def main():
                 t.start()
                 self._threads.add(t)
 
-    # Используем обычный ThreadPoolExecutor (он уже non-daemon в контексте `with`)
     global_helpers_executor = ThreadPoolExecutor(
         max_workers=MAX_HELPERS, 
         thread_name_prefix='GlobalHelper'
@@ -2057,38 +2012,31 @@ def main():
             
             time.sleep(5)
         
-        # ИСПРАВЛЕНИЕ: Корректное завершение всех компонентов
         log_info('⚙️ Начало graceful shutdown...')
         
-        # 1. Останавливаем TaskManager (выставляет shutdown_event)
         if task_manager:
             task_manager.shutdown()
             log_info('✅ TaskManager остановлен')
         
-        # 2. Даём хелперам время завершить текущие задачи
         log_info('⏳ Ожидание завершения хелперов (10 сек)...')
         time.sleep(10)
         
-        # 3. Принудительно останавливаем executor (НЕ daemon!)
         if global_helpers_executor:
             log_info('⚙️ Остановка GlobalHelpers executor...')
             global_helpers_executor.shutdown(wait=True, cancel_futures=False)
             log_info('✅ GlobalHelpers executor остановлен')
         
-        # 4. Останавливаем RPS Monitor (daemon поток, просто ждём)
         if rps_monitor:
             log_info('⚙️ Остановка RPS Monitor...')
             rps_monitor.stop()
             log_info('✅ RPS Monitor остановлен')
         
-        # 5. Закрываем CSV файл
         if csvfile:
             csvfile.flush()
             os.fsync(csvfile.fileno())
             csvfile.close()
             log_info('✅ CSV файл закрыт')
         
-        # 6. Финальная статистика
         log_info('═' * 80)
         log_info('🏁 ОБРАБОТКА ЗАВЕРШЕНА!')
         log_info('═' * 80)
@@ -2134,10 +2082,8 @@ def main():
         import traceback
         log_error(traceback.format_exc())
     finally:
-        # КРИТИЧНО: Очистка ресурсов в finally
         log_info('🧹 Финальная очистка ресурсов...')
         
-        # Закрываем CSV если ещё открыт
         if csvfile and not csvfile.closed:
             try:
                 csvfile.close()
@@ -2145,14 +2091,12 @@ def main():
             except Exception as e:
                 log_error(f'❌ Ошибка закрытия CSV: {e}')
         
-        # Останавливаем TaskManager если ещё не остановлен
         if task_manager:
             try:
                 task_manager.shutdown()
             except Exception:
                 pass
         
-        # Останавливаем executor если ещё не остановлен
         if global_helpers_executor:
             try:
                 global_helpers_executor.shutdown(wait=False, cancel_futures=True)
@@ -2160,13 +2104,11 @@ def main():
             except Exception as e:
                 log_error(f'❌ Ошибка остановки executor: {e}')
         
-        # Финальная сборка мусора
         gc.collect()
         
-        # Закрываем логгеры
         if logger:
             log_info('🏁 Завершение работы скрипта')
-            time.sleep(0.5)  # Даём время записать последние логи
+            time.sleep(0.5)
             for handler in logger.handlers[:]:
                 try:
                     handler.flush()
@@ -2184,7 +2126,6 @@ def main():
                 except Exception:
                     pass
         
-        # Финальная задержка для завершения daemon потоков
         time.sleep(1)
 
 
