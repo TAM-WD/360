@@ -25,7 +25,7 @@ CLIENT_SECRET = ''  # Secret сервисного приложения
 
 # Укажите UID или EMAIL (заполните только одно поле!)
 USER_UID = ''  # например: '123456789'
-USER_EMAIL = ''  # например: 'user@yandex.ru' vorobevval@test-support360-sso.net
+USER_EMAIL = ''  # например: 'user@yandex.ru'
 
 # Папка назначения для переноса файлов
 DESTINATION_FOLDER = 'disk:/Перенос шаринга'  # можно изменить на любую папку
