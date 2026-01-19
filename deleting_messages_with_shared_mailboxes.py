@@ -171,7 +171,6 @@ def cache_token(email: str, token: str, expires_in: int):
         _token_cache[email] = (token, expiry)
         logger.debug(f"🔑 Cached token for {email} (expires in {expires_in}s)")
 
-
 def force_cleanup():
     try:
         gc.collect()
