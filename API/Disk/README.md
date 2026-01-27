@@ -4,7 +4,7 @@
 - [compare_disks_structures.py](https://github.com/TAM-WD/360/blob/main/API/Disk/compare_disks_structures.py) - cравнение структуры файлов и папок (деревьев) между двумя Дисками.
 - [disk_resource_id_duplicates.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_resource_id_duplicates.py) - поиск дубликатов resource_id в Диске.
 - [disk_space_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_shared.py) - получение занятого/свободного места на Общих Дисках организации.
-- [disk_space_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO + SCIM.
+- [disk_space_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO.
 - [get_groups_accesses_for_links-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_groups_accesses_for_links-for_share.py) - получение групповых доступов к ссылкам по списку uid.
 - [get_shared_ress_of_user-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_shared_ress_of_user-for_share.py) - получение списка публичных ссылок одного пользователя.
 - [move_files_to_folder.py](https://github.com/TAM-WD/360/blob/main/API/Disk/move_files_to_folder.py) - перенос публичных ресурсов в любую папку.
