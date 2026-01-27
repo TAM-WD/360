@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Center Helper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Support Center Helper</h1>
+    
+    <div class="feature-block">
+      <div class="feature-info">
+        <h2>Скрыть тикеты без темы</h2>
+        <div id="counter" class="counter counter-loading">Загрузка...</div>
+      </div>
+      
+      <label class="toggle-switch">
+        <input type="checkbox" id="featureToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

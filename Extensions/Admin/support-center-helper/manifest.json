@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Support Center Helper",
+  "version": "0.1",
+  "description": "Расширение с полезными функциями для Центра Поддержки",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://admin.yandex.ru/*",
+    "https://admin.360.yandex.ru/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon_16x16.png",
+      "48": "icons/icon_48x48.png",
+      "128": "icons/icon_128x128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://admin.yandex.ru/*",
+        "https://admin.360.yandex.ru/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "icons/icon_16x16.png",
+    "48": "icons/icon_48x48.png",
+    "128": "icons/icon_128x128.png"
+  }
+}
