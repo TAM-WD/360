@@ -1,5 +1,5 @@
 # Описание
-- [backup_to_s3_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/backup_to_s3_shared.py) - бекапироване Общего Диска на S3 хранилище.
+- [backup_to_s3_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/backup_to_s3_shared.py) - бекапирование Общего Диска на S3.
 - [clear_disk_for_user.py](https://github.com/TAM-WD/360/blob/main/API/Disk/clear_disk_for_user.py) - удаление файлов федеративного пользователя с Диска по user_id (uid).
 - [compare_disks_structures.py](https://github.com/TAM-WD/360/blob/main/API/Disk/compare_disks_structures.py) - cравнение структуры файлов и папок (деревьев) между двумя Дисками.
 - [disk_resource_id_duplicates.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_resource_id_duplicates.py) - поиск дубликатов resource_id в Диске.
