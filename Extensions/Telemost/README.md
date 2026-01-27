@@ -1,3 +1,3 @@
 # Описание
-- [logs_downloader](https://github.com/TAM-WD/360/blob/main/Extensions/Admin/logs_downloader) - выгрузка списка аудит-логов в Excel найденных по фильтру.
-- [support-center-helper](https://github.com/TAM-WD/360/blob/main/Extensions/Admin/support-center-helper) - расширение возможностей центра поддержки.
+- [broadcast_chat_downloader](https://github.com/TAM-WD/360/blob/main/Extensions/Telemost/broadcast_chat_downloader) - выгрузка сообщений из чата проведенной трансляции в Excel.
+- [telemost_hand_sound](https://github.com/TAM-WD/360/blob/main/Extensions/Telemost/telemost_hand_sound) - звуки при поднятии руки в Телемосте.
