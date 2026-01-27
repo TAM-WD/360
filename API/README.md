@@ -1,5 +1,4 @@
 ## Примеры применения
-Ниже указаны цели каждого скрипта и примеры применения:
 - [ban_status_of_user](https://github.com/TAM-WD/360/blob/main/ban_status_of_user.py) - блокировка, разблокировка и проверка текущего статуса федеративного пользователя (заблокирован/разблокирован) по UID.
 - [clear_disk_for_user](https://github.com/TAM-WD/360/blob/main/clear_disk_for_user.py) - удаление файлов федеративного пользователя с Диска по user_id (uid).
 - [compare_disks_structures](https://github.com/TAM-WD/360/blob/main/compare_disks_structures.py) - cравнение структуры файлов и папок (деревьев) между двумя Дисками.
