@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs Exporter</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+    }
+    
+    .container {
+      padding: 20px;
+    }
+    
+    .header {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    
+    .status-card {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .status-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    
+    .status-text {
+      font-size: 14px;
+      flex: 1;
+    }
+    
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #3a3a3a;
+    }
+    
+    .stat-item {
+      flex: 1;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      display: block;
+      color: #9575cd;
+    }
+    
+    .stat-label {
+      font-size: 10px;
+      opacity: 0.5;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #exportBtn {
+      background: #7c4dff;
+      color: white;
+    }
+    
+    #exportBtn:enabled:hover {
+      background: #6a3de8;
+      transform: translateY(-1px);
+    }
+    
+    #exportBtn:disabled {
+      background: #3a3a3a;
+      color: #666;
+      cursor: not-allowed;
+    }
+    
+    #cancelBtn {
+      background: #d32f2f;
+      color: white;
+      display: none;
+    }
+    
+    #cancelBtn:hover {
+      background: #b71c1c;
+      transform: translateY(-1px);
+    }
+    
+    #cancelBtn.visible {
+      display: block;
+    }
+
+    .final-buttons {
+      display: none;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .final-buttons.visible {
+      display: flex;
+    }
+
+    #downloadBtn {
+      flex: 1.5;
+      background: #7c4dff;
+      color: white;
+    }
+
+    #downloadBtn:hover {
+      background: #6a3de8;
+      transform: translateY(-1px);
+    }
+
+    #restartBtn {
+      flex: 1;
+      background: #3a3a3a;
+      color: #9575cd;
+    }
+
+    #restartBtn:hover {
+      background: #4a4a4a;
+      transform: translateY(-1px);
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 2px;
+      background: #3a3a3a;
+      border-radius: 1px;
+      overflow: hidden;
+      display: none;
+      margin-top: 12px;
+    }
+    
+    .progress-bar.active {
+      display: block;
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background: #7c4dff;
+      width: 100%;
+      animation: progress-animation 1.5s infinite;
+    }
+    
+    @keyframes progress-animation {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    .info-text {
+      font-size: 11px;
+      opacity: 0.4;
+      text-align: center;
+    }
+    
+    .status-working .status-icon { 
+      animation: spin 2s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .background-notice {
+      background: #2a2a2a;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      text-align: center;
+      display: none;
+    }
+
+    .background-notice.visible {
+      display: block;
+    }
+
+    .background-notice-icon {
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="subtitle">Экспорт логов в Excel</div>
+    </div>
+
+    <div class="background-notice" id="backgroundNotice">
+      <span class="background-notice-icon">🔄</span>
+      Экспорт в фоне. Можете закрыть окно
+    </div>
+    
+    <div id="statusCard" class="status-card">
+      <div class="status-header">
+        <div class="status-icon" id="statusIcon">⏳</div>
+        <div class="status-text" id="statusText">Проверка страницы...</div>
+      </div>
+      <div id="stats" class="stats" style="display: none;">
+        <div class="stat-item">
+          <span class="stat-value" id="rowCount">0</span>
+          <span class="stat-label">записей</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="scrollCount">0</span>
+          <span class="stat-label">прокруток</span>
+        </div>
+      </div>
+      <div id="progressBar" class="progress-bar">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </div>
+    
+    <div class="buttons" id="mainButtons">
+      <button id="exportBtn" disabled>
+        Начать экспорт
+      </button>
+      <button id="cancelBtn">
+        Отменить
+      </button>
+    </div>
+
+    <div class="final-buttons" id="finalButtons">
+      <button id="downloadBtn">
+        📥 Скачать
+      </button>
+      <button id="restartBtn">
+        🔄 Заново
+      </button>
+    </div>
+    
+    <div class="info-text">
+      Автоматическая прокрутка и выгрузка
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
