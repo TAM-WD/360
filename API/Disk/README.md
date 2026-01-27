@@ -1,5 +1,16 @@
 # Описание
-- [api360_and_scim-patch_user_with_existing_nickname.py](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/api360_and_scim-patch_user_with_existing_nickname.py) - смена никнейма пользователя на существующий алиас.
-- [ban_status_of_user](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/ban_status_of_user.py) - блокировка, разблокировка и проверка текущего статуса федеративного пользователя (заблокирован/разблокирован) по UID.
-- [list_of_users_scim](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/list_of_users_scim.py) - получение списка всех пользователей в организации с помощью SCIM-API.
-- [remove_domain_from_username](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/remove_domain_from_username.py) - обновление значение userName (NameID) на аналогичный userName без домена по списку UID пользователей.
+- [backup_to_s3_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/backup_to_s3_shared.py) - бекапироване Общего Диска на S3 хранилище.
+- [clear_disk_for_user.py](https://github.com/TAM-WD/360/blob/main/API/Disk/clear_disk_for_user.py) - удаление файлов федеративного пользователя с Диска по user_id (uid).
+- [compare_disks_structures.py](https://github.com/TAM-WD/360/blob/main/API/Disk/compare_disks_structures.py) - cравнение структуры файлов и папок (деревьев) между двумя Дисками.
+- [disk_resource_id_duplicates.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_resource_id_duplicates.py) - поиск дубликатов resource_id в Диске.
+- [disk_space_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_shared.py) - получение занятого/свободного места на Общих Дисках организации.
+- [disk_space_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO + SCIM.
+- [get_groups_accesses_for_links-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_groups_accesses_for_links-for_share.py) - получение групповых доступов к ссылкам по списку uid.
+- [get_shared_ress_of_user-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_shared_ress_of_user-for_share.py) - получение списка публичных ссылок одного пользователя.
+- [move_files_to_folder.py](https://github.com/TAM-WD/360/blob/main/API/Disk/move_files_to_folder.py) - перенос публичных ресурсов в любую папку.
+- [parser_for_shared_disks.py](https://github.com/TAM-WD/360/blob/main/API/Disk/parser_for_shared_disks.py) - поиск по названию на Общем Диске.
+- [personal_disk_file_searcher_script.py](https://github.com/TAM-WD/360/blob/main/API/Disk/personal_disk_file_searcher_script.py) - поиск по названию файлов на Дисках сотрудников.
+- [public_links_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/public_links_of_users.py) - получение списка публичных ссылок среди всех пользователей на Дисках организации.
+- [public_links_of_blocked_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/public_links_of_blocked_users.py) - получение списка публичных ссылок среди заблокированных пользователей на Дисках организации.
+- [regdate_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/regdate_of_shared.py) - определение даты регистрации Общих Дисков в организации.
+- [shared_disks_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/shared_disks_of_users.py) - получение информации об Общих Дисках, доступных списку пользователей по e-mail.
