@@ -13,4 +13,8 @@
 - [public_links_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/public_links_of_users.py) - получение списка публичных ссылок среди всех пользователей на Дисках организации.
 - [public_links_of_blocked_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/public_links_of_blocked_users.py) - получение списка публичных ссылок среди заблокированных пользователей на Дисках организации.
 - [regdate_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/regdate_of_shared.py) - определение даты регистрации Общих Дисков в организации.
+- [save_files_to_another_disk-no_sso.py](https://github.com/TAM-WD/360/blob/main/API/Disk/save_files_to_another_disk-no_sso.py) - копирование файлов с Диска на Диск (без SSO).
+- [save_files_to_another_disk.py](https://github.com/TAM-WD/360/blob/main/API/Disk/save_files_to_another_disk.py) - копирование файлов с одного Диска на другой Диск.
+- [save_files_to_another_org.py](https://github.com/TAM-WD/360/blob/main/API/Disk/save_files_to_another_org.py) - копирование файлов по списку юзеров в другую организацию.
+- [regdate_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/regdate_of_shared.py) - определение даты регистрации Общих Дисков в организации.
 - [shared_disks_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/shared_disks_of_users.py) - получение информации об Общих Дисках, доступных списку пользователей по e-mail.
