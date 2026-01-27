@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Wiki Downloader",
+  "version": "1.0",
+  "description": "Выгрузка страниц Wiki",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://wiki.yandex.ru/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Wiki Downloader"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://wiki.yandex.ru/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

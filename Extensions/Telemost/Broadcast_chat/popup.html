@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 380px;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #2d3748;
+    }
+
+    .container {
+      background: white;
+      border-radius: 0;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 24px 20px;
+      text-align: center;
+      color: white;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 28px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+      letter-spacing: -1px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    .content {
+      padding: 24px 20px;
+    }
+
+    .warning-box {
+      background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+      border: 2px solid #fc8181;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .warning-title {
+      font-weight: 600;
+      color: #c53030;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .warning-title::before {
+      content: '⚠️';
+      font-size: 16px;
+    }
+
+    .warning-list {
+      list-style: none;
+      padding: 0;
+      color: #742a2a;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .warning-list li {
+      padding-left: 20px;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .warning-list li::before {
+      content: '•';
+      position: absolute;
+      left: 8px;
+      font-weight: bold;
+      color: #fc8181;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+
+    button::before {
+      content: '📥';
+      font-size: 18px;
+    }
+
+    button:disabled::before {
+      content: '⏹️';
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    #status {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+      margin-bottom: 16px;
+      animation: slideIn 0.3s ease;
+      line-height: 1.5;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .success {
+      background: #c6f6d5;
+      color: #22543d;
+      border: 1px solid #9ae6b4;
+    }
+
+    .error {
+      background: #fed7d7;
+      color: #742a2a;
+      border: 1px solid #fc8181;
+    }
+
+    .info {
+      background: #bee3f8;
+      color: #2c5282;
+      border: 1px solid #90cdf4;
+    }
+
+    .stats-container {
+      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .stats-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #2d3748;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stats-title::before {
+      content: '📊';
+      font-size: 16px;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+    }
+
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: #4a5568;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      color: #667eea;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #764ba2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-icon">C</div>
+      <h1>Chat Downloader</h1>
+      <div class="subtitle">Выгрузка чатов трансляций через Мессенджер</div>
+    </div>
+
+    <div class="content">
+      <div class="warning-box" id="warningBox" style="display: none;">
+        <ul class="warning-list">
+          <li>Не закрывайте вкладку с чатом</li>
+          <li>Не сворачивайте окно расширения</li>
+        </ul>
+      </div>
+
+      <div id="status"></div>
+
+      <button id="exportBtn">Начать новую выгрузку</button>
+            
+      <div id="statsContainer" style="display: none;">
+        <div class="stats-container">
+          <div class="stats-title">Статистика экспорта</div>
+          <div class="stat-item">
+            <span class="stat-label">❓ Вопросов</span>
+            <span class="stat-value" id="questionsCount">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">💬 Ответов</span>
+            <span class="stat-value" id="answersCount">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="libs/xlsx.full.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
