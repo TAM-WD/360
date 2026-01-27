@@ -1,5 +1,8 @@
 # Описание
-- [api360_and_scim-patch_user_with_existing_nickname.py](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/api360_and_scim-patch_user_with_existing_nickname.py) - смена никнейма пользователя на существующий алиас.
-- [ban_status_of_user](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/ban_status_of_user.py) - блокировка, разблокировка и проверка текущего статуса федеративного пользователя (заблокирован/разблокирован) по UID.
-- [list_of_users_scim](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/list_of_users_scim.py) - получение списка всех пользователей в организации с помощью SCIM-API.
-- [remove_domain_from_username](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/remove_domain_from_username.py) - обновление значение userName (NameID) на аналогичный userName без домена по списку UID пользователей.
+- [audit_log_disk_windows_delete_search.py](https://github.com/TAM-WD/360/blob/main/API/Admin/audit_log_disk_windows_delete_search.py) - получение аудит-логов удаления файлов из ПО Windows.
+- [audit_log_for_messenger_and_authorization.py](https://github.com/TAM-WD/360/blob/main/API/Admin/audit_log_for_messenger_and_authorization.py) - получение аудит-логов Мессенджера и авторизации.
+- [get_list_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Admin/get_list_of_users.py) - получение списка пользователей организации.
+- [list_of_groups.py](https://github.com/TAM-WD/360/blob/main/API/Admin/list_of_groups.py) - получение списка всех групп в организации.
+- [logout_of_blocked_users.py](https://github.com/TAM-WD/360/blob/main/API/Admin/logout_of_blocked_users.py) - Logout для заблокированных пользователей в организации.
+- [user_activity_checker.py](https://github.com/TAM-WD/360/blob/main/API/Admin/user_activity_checker.py) - проверка последней активности пользователей в Yandex 360.
+
