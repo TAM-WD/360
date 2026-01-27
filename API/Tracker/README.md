@@ -1,5 +1,5 @@
 # Описание
-- [api360_and_scim-patch_user_with_existing_nickname.py](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/api360_and_scim-patch_user_with_existing_nickname.py) - смена никнейма пользователя на существующий алиас.
-- [ban_status_of_user](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/ban_status_of_user.py) - блокировка, разблокировка и проверка текущего статуса федеративного пользователя (заблокирован/разблокирован) по UID.
-- [list_of_users_scim](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/list_of_users_scim.py) - получение списка всех пользователей в организации с помощью SCIM-API.
-- [remove_domain_from_username](https://github.com/TAM-WD/360/blob/main/API/ADSCIM/remove_domain_from_username.py) - обновление значение userName (NameID) на аналогичный userName без домена по списку UID пользователей.
+- [get_issue_worklog_changes-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/get_issue_worklog_changes-for_share.py) - получение ворклогов по задачам.
+- [get_worklog_by_user-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/get_worklog_by_user-for_share.py) - получение ворклогов по пользователю.
+- [get_uid_by_nickname.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/get_uid_by_nickname.py) - получение uid по nickname / email.
+- [list_of_tracker_users.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/list_of_tracker_users.py) - получение списка пользователей Трекера в организации.
