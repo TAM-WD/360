@@ -8,16 +8,41 @@
 </head>
 <body>
   <div class="container">
-    <h1>Support Center Helper</h1>
+    <div class="header">
+      <h1>Support Center Helper</h1>
+      <div class="version">v1.0.0</div>
+    </div>
     
+    <!-- Общая статистика -->
+    <div class="stats-block">
+      <div class="stat-item">
+        <span class="stat-label">Всего тикетов на странице:</span>
+        <span id="totalTickets" class="stat-value">0</span>
+      </div>
+    </div>
+    
+    <!-- Скрытие "Без темы" -->
     <div class="feature-block">
       <div class="feature-info">
         <h2>Скрыть тикеты без темы</h2>
-        <div id="counter" class="counter counter-loading">Загрузка...</div>
+        <div id="counterNoSubject" class="counter counter-loading">Загрузка...</div>
       </div>
       
       <label class="toggle-switch">
-        <input type="checkbox" id="featureToggle">
+        <input type="checkbox" id="toggleNoSubject">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Скрытие архивированных -->
+    <div class="feature-block">
+      <div class="feature-info">
+        <h2>Скрыть архивированные тикеты</h2>
+        <div id="counterArchived" class="counter counter-loading">Загрузка...</div>
+      </div>
+      
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggleArchived">
         <span class="slider"></span>
       </label>
     </div>

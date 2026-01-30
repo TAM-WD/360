@@ -1,39 +1,56 @@
-const STORAGE_KEY = 'featureEnabled';
-let isFeatureEnabled = false;
-const HIDDEN_CLASS = 'ext-hidden-row';
+// Ключи для хранения состояний
+const STORAGE_KEY_NO_SUBJECT = 'hideNoSubject';
+const STORAGE_KEY_ARCHIVED = 'hideArchived';
+
+// Состояния функций
+let hideNoSubjectEnabled = false;
+let hideArchivedEnabled = false;
+
+// Классы для скрытия элементов
+const HIDDEN_CLASS_NO_SUBJECT = 'ext-hidden-no-subject';
+const HIDDEN_CLASS_ARCHIVED = 'ext-hidden-archived';
+
+// Флаг инициализации
 let isInitialized = false;
 
+// Проверка, находимся ли мы на нужной странице
 function isTargetPage() {
   const path = window.location.pathname;
   return path.includes('/support-center');
 }
 
+// Инициализация
 async function init() {
   if (isInitialized) {
     return;
   }
+  
   if (!isTargetPage()) {
     setupUrlWatcher();
     return;
   }
   
-  console.log('Support Center Helper: инициализация на целевой странице');
   isInitialized = true;
-
+  
   injectStyles();
   
-  const result = await chrome.storage.sync.get(STORAGE_KEY);
-  isFeatureEnabled = result[STORAGE_KEY] || false;
-  
-  console.log('Support Center Helper: состояние загружено', isFeatureEnabled);
+  // Загружаем оба состояния из local storage
+  try {
+    const result = await chrome.storage.local.get([STORAGE_KEY_NO_SUBJECT, STORAGE_KEY_ARCHIVED]);
+    hideNoSubjectEnabled = result[STORAGE_KEY_NO_SUBJECT] || false;
+    hideArchivedEnabled = result[STORAGE_KEY_ARCHIVED] || false;
+  } catch (error) {
+    console.error('Support Center Helper: Ошибка загрузки состояний:', error);
+  }
   
   await waitForPageLoad();
   
-  if (isFeatureEnabled) {
-    enableFeature();
+  if (hideNoSubjectEnabled || hideArchivedEnabled) {
+    enableFeatures();
   }
 }
 
+// Ожидание загрузки страницы
 function waitForPageLoad() {
   return new Promise((resolve) => {
     if (document.readyState === 'complete') {
@@ -61,7 +78,6 @@ function setupUrlWatcher() {
     childList: true
   });
   
-  // События history API
   const originalPushState = history.pushState;
   const originalReplaceState = history.replaceState;
   
@@ -84,18 +100,20 @@ async function handleUrlChange() {
     await init();
   } else if (!isTargetPage() && isInitialized) {
     cleanup();
-  } else if (isTargetPage() && isInitialized && isFeatureEnabled) {
+  } else if (isTargetPage() && isInitialized && (hideNoSubjectEnabled || hideArchivedEnabled)) {
     setTimeout(() => {
-      hideEmptySubjectRows();
+      processRows();
     }, 1000);
   }
 }
 
+// Очистка при уходе со страницы
 function cleanup() {
-  disableFeature();
+  disableFeatures();
   isInitialized = false;
 }
 
+// Внедрение стилей для скрытия элементов
 function injectStyles() {
   if (document.getElementById('ext-hide-styles')) {
     return;
@@ -104,7 +122,8 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = 'ext-hide-styles';
   style.textContent = `
-    .${HIDDEN_CLASS} {
+    .${HIDDEN_CLASS_NO_SUBJECT},
+    .${HIDDEN_CLASS_ARCHIVED} {
       display: none !important;
     }
   `;
@@ -122,27 +141,24 @@ function injectStyles() {
   }
 }
 
+// Ожидание появления элементов таблицы
 function waitForTable(timeout = 10000) {
   return new Promise((resolve) => {
     const existingRows = document.querySelectorAll('tr[data-testid="resource-table-row"]');
     if (existingRows.length > 0) {
-      console.log('Support Center Helper: таблица уже загружена');
       resolve(true);
       return;
     }
-    
-    //console.log('Support Center Helper: ожидание загрузки таблицы...');
     
     const startTime = Date.now();
     const observer = new MutationObserver((mutations) => {
       const rows = document.querySelectorAll('tr[data-testid="resource-table-row"]');
       
       if (rows.length > 0) {
-        console.log('Support Center Helper: таблица появилась');
         observer.disconnect();
         resolve(true);
       } else if (Date.now() - startTime > timeout) {
-        //console.log('Support Center Helper: таймаут ожидания таблицы');
+        console.error('Support Center Helper: таймаут ожидания таблицы');
         observer.disconnect();
         resolve(false);
       }
@@ -155,136 +171,130 @@ function waitForTable(timeout = 10000) {
   });
 }
 
-// Функция для скрытия строк с "Без темы"
-function hideEmptySubjectRows() {
+// Получение общего количества тикетов
+function getTotalTicketsCount() {
+  const rows = document.querySelectorAll('tr[data-testid="resource-table-row"]');
+  return rows.length;
+}
+
+// Обработка всех строк
+function processRows() {
   const rows = document.querySelectorAll('tr[data-testid="resource-table-row"]');
   
   if (rows.length === 0) {
-    console.log('Support Center Helper: строки не найдены');
     return;
   }
   
-  let hiddenCount = 0;
+  let hiddenNoSubject = 0;
+  let hiddenArchived = 0;
   
   rows.forEach(row => {
-    // Пропускаем уже обработанные строки
-    if (row.dataset.processedByExt === 'true') {
-      return;
-    }
-    
-    // Ищем элементы с текстом внутри строки
-    const textElements = row.querySelectorAll('[data-testid="orb-text"]');
-    
-    textElements.forEach(element => {
-      const text = element.textContent.trim();
+    // Обработка "Без темы"
+    if (hideNoSubjectEnabled) {
+      const textElements = row.querySelectorAll('[data-testid="orb-text"]');
+      let hasNoSubject = false;
       
-      // Проверяем, содержит ли элемент текст "Без темы"
-      if (text === 'Без темы') {
-        row.classList.add(HIDDEN_CLASS);
-        row.dataset.processedByExt = 'true';
-        hiddenCount++;
+      textElements.forEach(element => {
+        if (element.textContent.trim() === 'Без темы') {
+          hasNoSubject = true;
+        }
+      });
+      
+      if (hasNoSubject) {
+        if (!row.classList.contains(HIDDEN_CLASS_NO_SUBJECT)) {
+          row.classList.add(HIDDEN_CLASS_NO_SUBJECT);
+          hiddenNoSubject++;
+        }
+      } else {
+        row.classList.remove(HIDDEN_CLASS_NO_SUBJECT);
       }
-    });
-    
-    // Помечаем как обработанную, даже если не скрыли
-    if (!row.dataset.processedByExt) {
-      row.dataset.processedByExt = 'true';
+    } else {
+      row.classList.remove(HIDDEN_CLASS_NO_SUBJECT);
     }
+    
+    // Обработка архивированных
+    if (hideArchivedEnabled) {
+      const statusTag = row.querySelector('[data-testid="ticket-status-tag"] .Orb-Tag-label');
+      let isArchived = false;
+      
+      if (statusTag && statusTag.textContent.trim() === 'Архивировано') {
+        isArchived = true;
+      }
+      
+      if (isArchived) {
+        if (!row.classList.contains(HIDDEN_CLASS_ARCHIVED)) {
+          row.classList.add(HIDDEN_CLASS_ARCHIVED);
+          hiddenArchived++;
+        }
+      } else {
+        row.classList.remove(HIDDEN_CLASS_ARCHIVED);
+      }
+    } else {
+      row.classList.remove(HIDDEN_CLASS_ARCHIVED);
+    }
+    
+    row.dataset.processedByExt = 'true';
   });
   
-  if (hiddenCount > 0) {
-    console.log(`Support Center Helper: скрыто строк "Без темы": ${hiddenCount}`);
-    
-    // Уведомляем popup об изменении статистики
+  if (hiddenNoSubject > 0 || hiddenArchived > 0) {
     notifyStatsUpdate();
   }
 }
 
-// Функция для уведомления popup об обновлении статистики
-function notifyStatsUpdate() {
-  // Отправляем сообщение в runtime (popup может его получить)
-  try {
-    chrome.runtime.sendMessage({
-      action: 'statsUpdated',
-      hiddenCount: document.querySelectorAll(`.${HIDDEN_CLASS}`).length
-    }).catch(() => {
-      // Игнорируем ошибку, если popup не открыт
-    });
-  } catch (error) {
-    // Popup может быть закрыт
-  }
-}
-
-
-// Функция для показа всех скрытых строк
+// Показ всех скрытых строк
 function showAllRows() {
-  const hiddenRows = document.querySelectorAll(`.${HIDDEN_CLASS}`);
+  const hiddenNoSubject = document.querySelectorAll(`.${HIDDEN_CLASS_NO_SUBJECT}`);
+  const hiddenArchived = document.querySelectorAll(`.${HIDDEN_CLASS_ARCHIVED}`);
   
-  hiddenRows.forEach(row => {
-    row.classList.remove(HIDDEN_CLASS);
+  hiddenNoSubject.forEach(row => {
+    row.classList.remove(HIDDEN_CLASS_NO_SUBJECT);
     row.dataset.processedByExt = 'false';
   });
   
-  if (hiddenRows.length > 0) {
-    console.log(`Support Center Helper: показано строк: ${hiddenRows.length}`);
-    
-    // Уведомляем popup об изменении
+  hiddenArchived.forEach(row => {
+    row.classList.remove(HIDDEN_CLASS_ARCHIVED);
+    row.dataset.processedByExt = 'false';
+  });
+  
+  if (hiddenNoSubject.length > 0 || hiddenArchived.length > 0) {
     notifyStatsUpdate();
   }
 }
 
-
-// Включение функции
-async function enableFeature() {
-  console.log('Support Center Helper: функция скрытия "Без темы" включена');
-  
-  // Ждём появления таблицы
+// Включение функций
+async function enableFeatures() {
   const tableExists = await waitForTable();
   
   if (tableExists) {
-    // Скрываем существующие элементы
-    hideEmptySubjectRows();
+    processRows();
   }
   
-  // Наблюдаем за изменениями DOM (для динамической подгрузки)
   startObserving();
-  
-  // Слушаем события прокрутки (для ленивой загрузки)
   window.addEventListener('scroll', handleScroll, { passive: true });
 }
 
-// Отключение функции
-function disableFeature() {
-  console.log('Support Center Helper: функция скрытия "Без темы" отключена');
-  
-  // Показываем все скрытые строки
+// Отключение функций
+function disableFeatures() {
   showAllRows();
-  
-  // Останавливаем наблюдение
   stopObserving();
-  
-  // Удаляем слушатель прокрутки
   window.removeEventListener('scroll', handleScroll);
 }
 
-// MutationObserver для отслеживания динамических изменений
+// MutationObserver
 let observer = null;
 
 function startObserving() {
-  // Если observer уже существует, не создаём новый
   if (observer) {
     return;
   }
   
   observer = new MutationObserver((mutations) => {
-    // Проверяем, добавились ли новые строки
     let shouldProcess = false;
     
     mutations.forEach((mutation) => {
       if (mutation.addedNodes.length > 0) {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) { // Element node
-            // Проверяем, является ли добавленный узел строкой таблицы или содержит их
+          if (node.nodeType === 1) {
             if (
               (node.matches && node.matches('tr[data-testid="resource-table-row"]')) ||
               (node.querySelector && node.querySelector('tr[data-testid="resource-table-row"]'))
@@ -297,7 +307,7 @@ function startObserving() {
     });
     
     if (shouldProcess) {
-      debounceHide();
+      debounceProcess();
     }
   });
   
@@ -305,29 +315,26 @@ function startObserving() {
     childList: true,
     subtree: true
   });
-  
-  //console.log('Support Center Helper: MutationObserver запущен');
 }
 
 function stopObserving() {
   if (observer) {
     observer.disconnect();
     observer = null;
-    //console.log('Support Center Helper: MutationObserver остановлен');
   }
 }
 
-// Debounce для оптимизации частых вызовов
+// Debounce
 let debounceTimer = null;
 
-function debounceHide() {
+function debounceProcess() {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    hideEmptySubjectRows();
+    processRows();
   }, 300);
 }
 
-// Обработчик прокрутки (throttled)
+// Обработчик прокрутки
 let scrollTimer = null;
 let isScrolling = false;
 
@@ -340,83 +347,104 @@ function handleScroll() {
   
   clearTimeout(scrollTimer);
   scrollTimer = setTimeout(() => {
-    hideEmptySubjectRows();
+    processRows();
     isScrolling = false;
   }, 500);
 }
 
+// Уведомление об обновлении статистики
+function notifyStatsUpdate() {
+  try {
+    chrome.runtime.sendMessage({
+      action: 'statsUpdated',
+      hiddenNoSubject: document.querySelectorAll(`.${HIDDEN_CLASS_NO_SUBJECT}`).length,
+      hiddenArchived: document.querySelectorAll(`.${HIDDEN_CLASS_ARCHIVED}`).length,
+      totalTickets: getTotalTicketsCount()
+    }).catch(() => {});
+  } catch (error) {
+    // Popup может быть закрыт
+  }
+}
+
 // Слушатель сообщений от popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Support Center Helper: получено сообщение', message);
-  
   if (message.action === 'toggleFeature') {
-    isFeatureEnabled = message.enabled;
+    const { feature, enabled } = message;
     
-    if (isFeatureEnabled) {
-      enableFeature();
-    } else {
-      disableFeature();
+    if (feature === 'noSubject') {
+      hideNoSubjectEnabled = enabled;
+    } else if (feature === 'archived') {
+      hideArchivedEnabled = enabled;
     }
     
+    if (hideNoSubjectEnabled || hideArchivedEnabled) {
+      enableFeatures();
+    } else {
+      disableFeatures();
+    }
+    
+    processRows();
     sendResponse({ success: true });
   }
   
-  // Обработчик для получения статистики
   if (message.action === 'getStats') {
-    const hiddenCount = document.querySelectorAll(`.${HIDDEN_CLASS}`).length;
+    const hiddenNoSubject = document.querySelectorAll(`.${HIDDEN_CLASS_NO_SUBJECT}`).length;
+    const hiddenArchived = document.querySelectorAll(`.${HIDDEN_CLASS_ARCHIVED}`).length;
+    const totalTickets = getTotalTicketsCount();
+    
     sendResponse({ 
-      hiddenCount,
+      hiddenNoSubject,
+      hiddenArchived,
+      totalTickets,
       isTargetPage: isTargetPage(),
       isInitialized
     });
   }
   
-  return true; // Важно для асинхронных ответов
+  return true;
 });
 
 // Обработка изменений в storage (синхронизация между вкладками)
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes[STORAGE_KEY]) {
-    const newValue = changes[STORAGE_KEY].newValue;
+  if (area === 'local') {
+    let stateChanged = false;
     
-    console.log('Support Center Helper: состояние изменено в storage', newValue);
+    if (changes[STORAGE_KEY_NO_SUBJECT]) {
+      hideNoSubjectEnabled = changes[STORAGE_KEY_NO_SUBJECT].newValue;
+      stateChanged = true;
+    }
     
-    if (newValue !== isFeatureEnabled) {
-      isFeatureEnabled = newValue;
-      
-      if (isTargetPage() && isInitialized) {
-        if (isFeatureEnabled) {
-          enableFeature();
-        } else {
-          disableFeature();
-        }
+    if (changes[STORAGE_KEY_ARCHIVED]) {
+      hideArchivedEnabled = changes[STORAGE_KEY_ARCHIVED].newValue;
+      stateChanged = true;
+    }
+    
+    if (stateChanged && isTargetPage() && isInitialized) {
+      if (hideNoSubjectEnabled || hideArchivedEnabled) {
+        enableFeatures();
+      } else {
+        disableFeatures();
       }
+      processRows();
     }
   }
 });
 
 // Запуск инициализации
-console.log('Support Center Helper: скрипт загружен', document.readyState);
-
-// Запускаем сразу
 init();
 
-// Также пробуем при DOMContentLoaded
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    //console.log('Support Center Helper: DOMContentLoaded');
     if (!isInitialized && isTargetPage()) {
       init();
     }
   });
 }
 
-// И при полной загрузке
 window.addEventListener('load', () => {
-  //console.log('Support Center Helper: window.load');
   if (!isInitialized && isTargetPage()) {
     init();
-  } else if (isInitialized && isFeatureEnabled) {
-    hideEmptySubjectRows();
+  } else if (isInitialized && (hideNoSubjectEnabled || hideArchivedEnabled)) {
+    processRows();
   }
 });
