@@ -21,3 +21,4 @@
 - [unpublish_resources_for_LIST_of_blocked_users-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/unpublish_resources_for_LIST_of_blocked_users-for_share.py) - удаление публичных ссылок заблокированных пользователей из списка
 - [unpublish_resources_for_blocked_users-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/unpublish_resources_for_blocked_users-for_share.py) - удаление публичных ссылок заблокированных пользователей.
 - [changing_access_level_of_links_to_organization.py](https://github.com/TAM-WD/360/blob/main/API/Disk/changing_access_level_of_links_to_organization.py) - Изменение видимости публичных ссылок с общим доступом на "Только внутри организации"
+- [restore_trash.py](https://github.com/TAM-WD/360/blob/main/API/Disk/restore_trash.py) - восстановление файлов из Корзины полностью или по датам удаления
