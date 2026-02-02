@@ -5,3 +5,4 @@
 - [deleting_emails_by_sender.py](https://github.com/TAM-WD/360/blob/main/API/Mail/deleting_emails_by_sender.py) - удаление писем по отправителю и дате получения письма.
 - [imap_folder_search.py](https://github.com/TAM-WD/360/blob/main/API/Mail/imap_folder_search.py) - получение числа папок и писем.
 - [imap_to_all_mboxUserFilter.py](https://github.com/TAM-WD/360/blob/main/API/Mail/imap_to_all_mboxUserFilter.py) - выгрузка писем из почтового ящика по заданному фильтру.
+- [MVP-SMTP-reference-answer.py](https://github.com/TAM-WD/360/blob/main/API/Mail/MVP-SMTP-reference-answer.py) - ответ на последнее письмо в ящике по SMTP с сохранением цепочки и истории переписки
