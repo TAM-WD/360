@@ -16,7 +16,7 @@ import threading
 CLIENT_ID = '' # id сервисного приложения с правами на чтение диска cloud_api:disk.info и cloud_api:disk.write
 CLIENT_SECRET = '' # secret сервисного приложения с правами на чтение диска cloud_api:disk.info и cloud_api:disk.write
 
-DISK_ID = '' # uid Диска.
+DISK_ID = '' # uid =Диска.
 
 # Пути к файлам/папкам для восстановления
 PATHS_TO_RESTORE = [
@@ -29,7 +29,7 @@ PATHS_TO_RESTORE = [
 DATE_FILTER = {
     'enabled': True,
     'start_date': '2026-01-29 13:47',
-    'end_date': '2026-01-30 06:50',
+    'end_date': '2026-01-29 15:50',
     'timezone': 'UTC',
 }
 
@@ -50,6 +50,7 @@ API_CONFIG = {
     'retry_delay': 2,
     'page_size': 1000,
     'max_rps': 10,
+    'token_lifetime_minutes': 55,
 }
 
 DEBUG = True
@@ -103,7 +104,7 @@ class Logger:
 
 
 class RateLimiter:
-    """Rate limiter"""
+    """Rate limiter для ограничения RPS"""
     
     def __init__(self, max_rps=10):
         self.min_interval = 1.0 / max_rps
@@ -111,7 +112,7 @@ class RateLimiter:
         self.lock = threading.Lock()
     
     def wait(self):
-        with self.lock:
+        with self._lock:
             current_time = time.time()
             elapsed = current_time - self.last_request_time
             
@@ -120,6 +121,133 @@ class RateLimiter:
                 time.sleep(sleep_time)
             
             self.last_request_time = time.time()
+    
+    @property
+    def _lock(self):
+        return self.lock
+
+
+class TokenManager:
+    """Менеджер токенов с автоматическим обновлением"""
+    
+    def __init__(self, disk_id, client_id, client_secret, token_lifetime_minutes=55):
+        self.disk_id = disk_id
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.token_lifetime = token_lifetime_minutes * 60  # в секундах
+        
+        self._token = None
+        self._token_obtained_at = None
+        self._lock = threading.Lock()
+        self._refresh_count = 0
+    
+    def _fetch_new_token(self):
+        """Получение нового токена через token exchange"""
+        url = 'https://oauth.yandex.ru/token'
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        data = {
+            'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'subject_token': self.disk_id,
+            'subject_token_type': 'urn:yandex:params:oauth:token-type:uid'
+        }
+        
+        if logger:
+            logger.info(f"Requesting new token for disk: {self.disk_id}")
+        
+        retries = Retry(total=5, backoff_factor=1, status_forcelist=[429, 502, 503, 504])
+        session = requests.Session()
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+        
+        try:
+            response = session.post(url, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                self._token = token_data['access_token']
+                self._token_obtained_at = time.time()
+                self._refresh_count += 1
+                
+                expires_in = token_data.get('expires_in', 3600)
+                if logger:
+                    logger.info(f"Token received (expires in {expires_in}s, refresh #{self._refresh_count})")
+                    logger.debug(f"Token will be refreshed after {self.token_lifetime}s")
+                
+                return self._token
+            else:
+                if logger:
+                    logger.error(f"Error getting token: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            if logger:
+                logger.error(f"Request error while getting token: {e}")
+            return None
+    
+    def _is_token_expired(self):
+        """Проверка истечения токена"""
+        if self._token is None or self._token_obtained_at is None:
+            return True
+        
+        elapsed = time.time() - self._token_obtained_at
+        return elapsed >= self.token_lifetime
+    
+    def get_token(self):
+        """Получение актуального токена. Автоматически обновляет токен если он истёк или скоро истечёт."""
+        with self._lock:
+            if self._is_token_expired():
+                remaining = self.get_token_remaining()
+                
+                if self._token:
+                    if logger:
+                        logger.info(f"Token expiring (remaining: {remaining:.0f}s). Refreshing...")
+                
+                new_token = self._fetch_new_token()
+                
+                if new_token is None:
+                    if self._token:
+                        if logger:
+                            logger.warning("Failed to refresh token, using existing token")
+                        return self._token
+                    else:
+                        raise Exception("Failed to obtain token")
+                
+                return new_token
+            
+            return self._token
+    
+    def get_token_age(self):
+        """Возвращает возраст токена в секундах"""
+        if self._token_obtained_at is None:
+            return None
+        return time.time() - self._token_obtained_at
+    
+    def get_token_remaining(self):
+        """Возвращает оставшееся время жизни токена в секундах"""
+        if self._token_obtained_at is None:
+            return 0
+        elapsed = time.time() - self._token_obtained_at
+        return max(0, self.token_lifetime - elapsed)
+    
+    def force_refresh(self):
+        """Принудительное обновление токена"""
+        with self._lock:
+            if logger:
+                logger.info("Force refreshing token...")
+            self._token = None
+            self._token_obtained_at = None
+            return self._fetch_new_token()
+    
+    def get_status(self):
+        """Возвращает статус токена для логирования"""
+        if self._token is None:
+            return "No token"
+        
+        age = self.get_token_age()
+        remaining = self.get_token_remaining()
+        
+        return f"age: {age:.0f}s, remaining: {remaining:.0f}s, refreshes: {self._refresh_count}"
 
 
 class ResultsWriter:
@@ -201,6 +329,7 @@ class ResultsWriter:
 logger = None
 rate_limiter = None
 results_writer = None
+token_manager = None
 
 
 def create_log_directory():
@@ -214,14 +343,24 @@ def create_log_directory():
 
 def init_logging(log_dir):
     """Инициализация системы логирования"""
-    global logger, rate_limiter, results_writer
+    global logger, rate_limiter, results_writer, token_manager
     
     logger = Logger(log_dir)
     rate_limiter = RateLimiter(max_rps=API_CONFIG.get('max_rps', 10))
     results_writer = ResultsWriter(log_dir)
+    token_manager = TokenManager(
+        disk_id=DISK_ID,
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        token_lifetime_minutes=API_CONFIG.get('token_lifetime_minutes', 55)
+    )
     
     return logger
 
+
+# ============================================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ============================================================================
 
 def parse_date(date_string, use_utc=True):
     """Парсинг строки даты в datetime объект"""
@@ -254,7 +393,7 @@ def parse_date(date_string, use_utc=True):
 
 
 def parse_api_date(date_string):
-    """Парсинг даты из API ответа"""
+    """Парсинг даты из API ответа (ISO 8601 формат)"""
     if not date_string:
         return None
     
@@ -296,17 +435,38 @@ def filter_items_by_date(items, start_date=None, end_date=None, use_utc=True):
     return filtered
 
 
-def make_request(method, url, headers=None, params=None, data=None, timeout=30):
-    """Функция для API запросов"""
+# ============================================================================
+# API ФУНКЦИИ
+# ============================================================================
+
+def make_request(method, url, headers=None, params=None, data=None, timeout=30, use_auth=True):
+    """
+    Универсальная функция для API запросов с ретраями и rate limiting.
+    Автоматически добавляет актуальный токен авторизации.
+    """
     max_retries = API_CONFIG.get('max_retries', 5)
     retry_delay = API_CONFIG.get('retry_delay', 2)
+    
+    if headers is None:
+        headers = {}
     
     last_error = None
     
     for attempt in range(max_retries):
         try:
+            # Rate limiting
             rate_limiter.wait()
             
+            # Добавляем актуальный токен авторизации
+            if use_auth and token_manager:
+                token = token_manager.get_token()
+                if token:
+                    headers['Authorization'] = f'OAuth {token}'
+                else:
+                    logger.error("No valid token available")
+                    return None
+            
+            # Выполняем запрос
             if method.upper() == 'GET':
                 response = requests.get(url, headers=headers, params=params, timeout=timeout)
             elif method.upper() == 'POST':
@@ -316,9 +476,18 @@ def make_request(method, url, headers=None, params=None, data=None, timeout=30):
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
+            # Проверяем на ошибку авторизации
+            if response.status_code == 401:
+                logger.warning(f"Auth error (401), refreshing token... (attempt {attempt + 1}/{max_retries})")
+                if token_manager:
+                    token_manager.force_refresh()
+                continue
+            
+            # Успешные коды или ожидаемые ошибки
             if response.status_code < 500 or response.status_code in [404, 409]:
                 return response
             
+            # 5xx ошибки - ретраим
             logger.warning(f"Server error {response.status_code}, attempt {attempt + 1}/{max_retries}")
             last_error = f"HTTP {response.status_code}"
             
@@ -335,6 +504,7 @@ def make_request(method, url, headers=None, params=None, data=None, timeout=30):
             last_error = str(e)
             break
         
+        # Экспоненциальная задержка
         if attempt < max_retries - 1:
             wait_time = retry_delay * (2 ** attempt)
             logger.debug(f"Waiting {wait_time}s before retry...")
@@ -344,35 +514,10 @@ def make_request(method, url, headers=None, params=None, data=None, timeout=30):
     return None
 
 
-def get_token(disk_id):
-    """Получение токена для доступа к содержимому Диска"""
-    logger.info(f"Getting token for disk: {disk_id}")
-    
-    url = 'https://oauth.yandex.ru/token'
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    data = {
-        'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
-        'client_id': f'{CLIENT_ID}',
-        'client_secret': f'{CLIENT_SECRET}',
-        'subject_token': f'{disk_id}',
-        'subject_token_type': f'urn:yandex:params:oauth:token-type:uid'
-    }
-    
-    response = make_request('POST', url, headers=headers, data=data)
-    
-    if response and response.status_code == 200:
-        logger.info(f"Token received successfully")
-        return response.json()['access_token']
-    else:
-        error_text = response.text if response else "No response"
-        logger.error(f"Error getting token: {error_text}")
-        return None
-
-
-def get_trash_page(token, path='/', limit=1000, offset=0):
+def get_trash_page(path='/', limit=1000, offset=0):
     """Получение одной страницы элементов корзины"""
     url = 'https://cloud-api.yandex.net/v1/disk/trash/resources'
-    headers = {'Authorization': f'OAuth {token}', 'Accept': 'application/json'}
+    headers = {'Accept': 'application/json'}
     params = {'path': path, 'limit': limit, 'offset': offset}
     
     logger.debug(f"Fetching trash page: offset={offset}, limit={limit}")
@@ -387,8 +532,8 @@ def get_trash_page(token, path='/', limit=1000, offset=0):
         return None
 
 
-def get_all_trash_items(token, page_size=1000):
-    """Получение элементов корзины"""
+def get_all_trash_items(page_size=1000):
+    """Получение ВСЕХ элементов корзины с пагинацией"""
     all_items = []
     offset = 0
     total = None
@@ -396,7 +541,7 @@ def get_all_trash_items(token, page_size=1000):
     logger.info(f"Fetching all trash items (page size: {page_size})...")
     
     while True:
-        page_data = get_trash_page(token, path='/', limit=page_size, offset=offset)
+        page_data = get_trash_page(path='/', limit=page_size, offset=offset)
         
         if page_data is None:
             logger.error(f"Error fetching page at offset {offset}")
@@ -414,6 +559,10 @@ def get_all_trash_items(token, page_size=1000):
         
         all_items.extend(items)
         logger.info(f"Fetched: {len(all_items)} / {total} items")
+        
+        # Логируем статус токена каждые 10 страниц
+        if offset > 0 and (offset // page_size) % 10 == 0:
+            logger.debug(f"Token status: {token_manager.get_status()}")
         
         if len(all_items) >= total:
             break
@@ -440,13 +589,12 @@ def convert_trash_path_for_api(trash_path):
         return 'trash:/' + path
 
 
-def restore_from_trash(token, trash_path, overwrite=False):
+def restore_from_trash(trash_path, overwrite=False):
     """Восстановление файла/папки из корзины"""
     api_path = convert_trash_path_for_api(trash_path)
     
     url = 'https://cloud-api.yandex.net/v1/disk/trash/resources/restore'
     headers = {
-        'Authorization': f'OAuth {token}',
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
@@ -467,9 +615,9 @@ def restore_from_trash(token, trash_path, overwrite=False):
     return response
 
 
-def check_operation_status(token, operation_href):
+def check_operation_status(operation_href):
     """Проверка статуса асинхронной операции"""
-    headers = {'Authorization': f'OAuth {token}', 'Accept': 'application/json'}
+    headers = {'Accept': 'application/json'}
     
     response = make_request('GET', operation_href, headers=headers)
     
@@ -477,6 +625,10 @@ def check_operation_status(token, operation_href):
         return response.json()
     return {'status': 'error', 'error': f'HTTP {response.status_code if response else "No response"}'}
 
+
+# ============================================================================
+# ФУНКЦИИ ВОССТАНОВЛЕНИЯ
+# ============================================================================
 
 def normalize_path(path):
     """Нормализация пути для сравнения"""
@@ -528,13 +680,12 @@ def find_item_by_path(items, search_path):
     return matches[0]
 
 
-def restore_single_item(token, item, config, api_config, index=None):
+def restore_single_item(item, config, index=None):
     """Восстановление одного элемента"""
     trash_path = item.get('path', '')
     original_path = item.get('origin_path', '')
     
     response = restore_from_trash(
-        token, 
         trash_path,
         overwrite=config.get('overwrite', False)
     )
@@ -627,7 +778,7 @@ def restore_single_item(token, item, config, api_config, index=None):
     return result
 
 
-def wait_for_operations(token, operations, timeout=300, interval=2):
+def wait_for_operations(operations, timeout=300, interval=2):
     """Ожидание завершения асинхронных операций"""
     if not operations:
         return
@@ -641,7 +792,7 @@ def wait_for_operations(token, operations, timeout=300, interval=2):
         completed = []
         
         for href, op in pending.items():
-            status_info = check_operation_status(token, href)
+            status_info = check_operation_status(href)
             status = status_info.get('status', 'unknown')
             
             if status == 'success':
@@ -671,7 +822,7 @@ def wait_for_operations(token, operations, timeout=300, interval=2):
         logger.warning(f"    ⏰ Timeout: {op['name']}")
 
 
-def restore_files(token, paths_to_restore, trash_items, config, tracking_config, api_config, date_filter=None):
+def restore_files(paths_to_restore, trash_items, config, tracking_config, date_filter=None):
     """Восстановление файлов из корзины"""
     if not paths_to_restore:
         logger.warning("No paths specified")
@@ -700,6 +851,10 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
     for search_path in paths_to_restore:
         logger.info(f"Processing: {search_path}")
         
+        # Логируем статус токена
+        logger.debug(f"Token status: {token_manager.get_status()}")
+        
+        # Проверка на восстановление всей корзины
         if search_path.strip() in ['trash:/', 'trash:', '/', '*', 'all']:
             items_to_restore = filter_items_by_date(
                 trash_items, 
@@ -726,7 +881,11 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
                 logger.debug(f"  Deleted: {item.get('deleted')}")
                 logger.debug(f"  Original: {item.get('origin_path')}")
                 
-                result = restore_single_item(token, item, config, api_config, global_index)
+                # Периодически логируем статус токена
+                if idx > 0 and idx % 100 == 0:
+                    logger.info(f"Progress: {idx}/{len(items_to_restore)}, Token: {token_manager.get_status()}")
+                
+                result = restore_single_item(item, config, global_index)
                 result['search_path'] = search_path
                 results.append(result)
                 
@@ -739,6 +898,7 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
             
             continue
         
+        # Поиск по папке
         folder_items = find_items_by_folder(trash_items, search_path)
         
         if folder_items and (start_date or end_date):
@@ -751,7 +911,7 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
                 global_index += 1
                 logger.info(f"  [{idx+1}/{len(folder_items)}] {item.get('name')} ({item.get('type')})")
                 
-                result = restore_single_item(token, item, config, api_config, global_index)
+                result = restore_single_item(item, config, global_index)
                 result['search_path'] = search_path
                 results.append(result)
                 
@@ -803,7 +963,7 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
             logger.info(f"  Found: {item.get('path')}")
             logger.debug(f"  Match type: {match['match_type']}")
             
-            result = restore_single_item(token, item, config, api_config, global_index)
+            result = restore_single_item(item, config, global_index)
             result['search_path'] = search_path
             results.append(result)
             
@@ -814,11 +974,12 @@ def restore_files(token, paths_to_restore, trash_items, config, tracking_config,
                     'result': result
                 })
     
+    # Ожидание асинхронных операций
     if async_ops and tracking_config.get('enabled', True):
         logger.info("=" * 80)
         logger.info("Tracking async operations")
         logger.info("=" * 80)
-        wait_for_operations(token, async_ops, 
+        wait_for_operations(async_ops, 
                           tracking_config.get('timeout', 300),
                           tracking_config.get('batch_check_interval', 2))
     
@@ -871,6 +1032,9 @@ def display_summary(results):
     logger.info(f"📅 Filtered by date: {len(filtered_by_date)}")
     logger.info(f"⏰ Timeout: {len(timeout)}")
     
+    # Статистика токена
+    logger.info(f"Token refreshes: {token_manager._refresh_count}")
+    
     if success:
         logger.info(f"\n✓ Restored ({len(success)}):")
         for r in success[:20]:
@@ -892,10 +1056,16 @@ def display_summary(results):
     logger.info("=" * 80)
 
 
+# ============================================================================
+# MAIN
+# ============================================================================
+
 if __name__ == '__main__':
     
+    # Создаём директорию для логов
     log_dir = create_log_directory()
     
+    # Инициализируем логирование
     logger = init_logging(log_dir)
     
     try:
@@ -905,6 +1075,7 @@ if __name__ == '__main__':
         logger.info(f"Disk ID: {DISK_ID}")
         logger.info(f"DEBUG: {DEBUG}")
         logger.info(f"Max RPS: {API_CONFIG.get('max_rps', 10)}")
+        logger.info(f"Token lifetime: {API_CONFIG.get('token_lifetime_minutes', 55)} minutes")
         logger.info("=" * 80)
         
         if DATE_FILTER.get('enabled'):
@@ -913,14 +1084,17 @@ if __name__ == '__main__':
             logger.info(f"  End:   {DATE_FILTER.get('end_date', 'Not set')}")
             logger.info(f"  TZ:    {DATE_FILTER.get('timezone', 'UTC')}")
         
-        token = get_token(DISK_ID)
+        # Получаем начальный токен
+        initial_token = token_manager.get_token()
         
-        if not token:
-            logger.error("Failed to get token. Exiting.")
+        if not initial_token:
+            logger.error("Failed to get initial token. Exiting.")
             sys.exit(1)
         
-        trash_items = get_all_trash_items(token, page_size=API_CONFIG.get('page_size', 1000))
+        # Получаем содержимое корзины
+        trash_items = get_all_trash_items(page_size=API_CONFIG.get('page_size', 1000))
         
+        # Показываем отфильтрованные элементы
         if DATE_FILTER.get('enabled') and (DATE_FILTER.get('start_date') or DATE_FILTER.get('end_date')):
             use_utc = DATE_FILTER.get('timezone', 'UTC').upper() == 'UTC'
             filtered_items = filter_items_by_date(
@@ -934,15 +1108,20 @@ if __name__ == '__main__':
         else:
             display_trash_info(trash_items, show_items=True, max_display=50)
         
+        # Восстанавливаем файлы
         if PATHS_TO_RESTORE:
-            results = restore_files(token, PATHS_TO_RESTORE, trash_items, 
-                                   RESTORE_CONFIG, TRACKING_CONFIG, API_CONFIG, DATE_FILTER)
+            results = restore_files(PATHS_TO_RESTORE, trash_items, 
+                                   RESTORE_CONFIG, TRACKING_CONFIG, DATE_FILTER)
             display_summary(results)
         else:
             logger.warning("No paths specified (PATHS_TO_RESTORE is empty)")
         
         logger.info('Complete')
         logger.info(f"Results saved to: {log_dir}")
+        
+    except KeyboardInterrupt:
+        logger.warning("Interrupted by user")
+        sys.exit(130)
         
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
