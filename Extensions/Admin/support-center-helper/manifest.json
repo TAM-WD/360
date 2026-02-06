@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Support Center Helper",
-  "version": "1.0.0",
+  "version": "2.4",
   "description": "Расширение для работы с Support Center",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "downloads"
   ],
   "host_permissions": [
     "https://admin.yandex.ru/*",
@@ -20,15 +21,38 @@
       "128": "icons/icon128.png"
     }
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": [
         "https://admin.yandex.ru/*",
         "https://admin.360.yandex.ru/*"
       ],
-      "js": ["content.js"],
+      "js": ["injector.js"],
       "run_at": "document_start",
       "all_frames": false
+    },
+    {
+      "matches": [
+        "https://admin.yandex.ru/*",
+        "https://admin.360.yandex.ru/*"
+      ],
+      "js": ["content.js"],
+      "css": ["navigation.css"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["interceptor.js", "navigation.js"],
+      "matches": [
+        "https://admin.yandex.ru/*",
+        "https://admin.360.yandex.ru/*"
+      ]
     }
   ],
   "icons": {

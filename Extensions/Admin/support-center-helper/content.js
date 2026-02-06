@@ -1,6 +1,7 @@
 // Ключи для хранения состояний
 const STORAGE_KEY_NO_SUBJECT = 'hideNoSubject';
 const STORAGE_KEY_ARCHIVED = 'hideArchived';
+const STORAGE_KEY_NAVIGATION = 'enableNavigation';
 
 // Состояния функций
 let hideNoSubjectEnabled = false;
@@ -12,6 +13,65 @@ const HIDDEN_CLASS_ARCHIVED = 'ext-hidden-archived';
 
 // Флаг инициализации
 let isInitialized = false;
+
+// Отслеживание фильтров для экспорта
+let lastExportFilters = null;
+
+// Функция для проверки изменения фильтров экспорта
+function hasExportFiltersChanged(newFilters) {
+  if (!lastExportFilters) {
+    return true;
+  }
+  
+  const keys = ['org_id', 'subject', 'author_uids', 'products', 'statuses', 
+                'created_at_from', 'created_at_to', 'updated_at_from', 'updated_at_to'];
+  
+  for (const key of keys) {
+    const oldValue = JSON.stringify(lastExportFilters[key]);
+    const newValue = JSON.stringify(newFilters[key]);
+    
+    if (oldValue !== newValue) {
+      console.log(`Support Center Helper: Фильтр экспорта "${key}" изменился`);
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Слушаем события от interceptor.js
+window.addEventListener('ticketsReceived', (event) => {
+  const tickets = event.detail.tickets;
+  const filters = event.detail.filters || {};
+  
+  if (tickets && tickets.length > 0) {
+    console.log(`Support Center Helper: Получено ${tickets.length} тикетов от interceptor`);
+    
+    // Проверяем, изменились ли фильтры для экспорта
+    const filtersChanged = hasExportFiltersChanged(filters);
+    
+    if (filtersChanged) {
+      console.log('Support Center Helper: Фильтры для экспорта изменились, очищаем кэш');
+      lastExportFilters = filters;
+    }
+    
+    if (filtersChanged) {
+      console.log('Support Center Helper: Фильтры для экспорта изменились');
+      lastExportFilters = filters;
+    }
+    
+    chrome.runtime.sendMessage({
+      action: 'addTickets',
+      tickets: tickets,
+      filters: filters,
+      shouldClear: filtersChanged
+    }).then(response => {
+      console.log('Support Center Helper: Тикеты отправлены в background', response);
+    }).catch(error => {
+      console.error('Support Center Helper: Ошибка отправки тикетов:', error);
+    });
+  }
+});
 
 // Проверка, находимся ли мы на нужной странице
 function isTargetPage() {
@@ -34,11 +94,27 @@ async function init() {
   
   injectStyles();
   
-  // Загружаем оба состояния из local storage
+  // Загружаем все состояния из local storage
   try {
-    const result = await chrome.storage.local.get([STORAGE_KEY_NO_SUBJECT, STORAGE_KEY_ARCHIVED]);
+    const result = await chrome.storage.local.get([
+      STORAGE_KEY_NO_SUBJECT, 
+      STORAGE_KEY_ARCHIVED,
+      STORAGE_KEY_NAVIGATION
+    ]);
+    
     hideNoSubjectEnabled = result[STORAGE_KEY_NO_SUBJECT] || false;
     hideArchivedEnabled = result[STORAGE_KEY_ARCHIVED] || false;
+    const navigationEnabled = result[STORAGE_KEY_NAVIGATION] || false;
+    
+    // Отправляем состояние навигации в navigation.js
+    window.dispatchEvent(new CustomEvent('navigationSettingChanged', {
+      detail: { 
+        enabled: navigationEnabled,
+        hideNoSubject: hideNoSubjectEnabled,
+        hideArchived: hideArchivedEnabled
+      }
+    }));
+    
   } catch (error) {
     console.error('Support Center Helper: Ошибка загрузки состояний:', error);
   }
@@ -375,6 +451,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       hideNoSubjectEnabled = enabled;
     } else if (feature === 'archived') {
       hideArchivedEnabled = enabled;
+    } else if (feature === 'navigation') {
+      // Отправляем событие в navigation.js
+      window.dispatchEvent(new CustomEvent('navigationSettingChanged', {
+        detail: { 
+          enabled,
+          hideNoSubject: hideNoSubjectEnabled,
+          hideArchived: hideArchivedEnabled
+        }
+      }));
     }
     
     if (hideNoSubjectEnabled || hideArchivedEnabled) {
@@ -404,10 +489,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Обработка изменений в storage (синхронизация между вкладками)
+// Обработка изменений в storage
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     let stateChanged = false;
+    let navigationChanged = false;
     
     if (changes[STORAGE_KEY_NO_SUBJECT]) {
       hideNoSubjectEnabled = changes[STORAGE_KEY_NO_SUBJECT].newValue;
@@ -419,6 +505,17 @@ chrome.storage.onChanged.addListener((changes, area) => {
       stateChanged = true;
     }
     
+    if (changes[STORAGE_KEY_NAVIGATION]) {
+      navigationChanged = true;
+      window.dispatchEvent(new CustomEvent('navigationSettingChanged', {
+        detail: { 
+          enabled: changes[STORAGE_KEY_NAVIGATION].newValue,
+          hideNoSubject: hideNoSubjectEnabled,
+          hideArchived: hideArchivedEnabled
+        }
+      }));
+    }
+    
     if (stateChanged && isTargetPage() && isInitialized) {
       if (hideNoSubjectEnabled || hideArchivedEnabled) {
         enableFeatures();
@@ -426,12 +523,139 @@ chrome.storage.onChanged.addListener((changes, area) => {
         disableFeatures();
       }
       processRows();
+      
+      // Уведомляем навигацию об изменении фильтров
+      if (navigationChanged) {
+        window.dispatchEvent(new CustomEvent('navigationFiltersChanged', {
+          detail: {
+            hideNoSubject: hideNoSubjectEnabled,
+            hideArchived: hideArchivedEnabled
+          }
+        }));
+      }
     }
   }
 });
 
-// Запуск инициализации
-init();
+
+// Отслеживание перезагрузки страницы списка тикетов
+let isNavigatingBetweenTickets = false;
+
+window.addEventListener('beforeunload', () => {
+  const currentUrl = window.location.href;
+  const isListPage = (currentUrl.includes('/support-center?') || 
+                     currentUrl.includes('/support-center/?')) &&
+                     !currentUrl.match(/\/support-center\/[^/?]+/);
+  
+  // Если это страница списка и не навигация между тикетами, очищаем
+  if (isListPage && !isNavigatingBetweenTickets) {
+    console.log('Content Script: 🔄 Перезагрузка страницы списка, очищаем навигацию');
+    
+    try {
+      // Очищаем и навигацию и экспорт
+      chrome.runtime.sendMessage({ action: 'clearTickets' });
+    } catch (error) {
+      console.error('Content Script: Ошибка очистки при перезагрузке', error);
+    }
+  }
+  
+  isNavigatingBetweenTickets = false;
+});
+
+// Помечаем навигацию между тикетами
+window.addEventListener('ticketNavigationStarted', () => {
+  console.log('Content Script: 🎯 Начата навигация между тикетами');
+  isNavigatingBetweenTickets = true;
+  
+  setTimeout(() => {
+    isNavigatingBetweenTickets = false;
+  }, 2000);
+});
+
+// Получение списка тикетов для навигации
+window.addEventListener('requestNavigationList', async (event) => {
+  console.log('Content Script: Запрос списка навигации');
+  
+  try {
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'getNavigationList' 
+    });
+    
+    console.log('Content Script: Список навигации получен', response);
+    
+    window.dispatchEvent(new CustomEvent('navigationListResponse', {
+      detail: response
+    }));
+  } catch (error) {
+    console.error('Content Script: Ошибка получения списка навигации', error);
+    window.dispatchEvent(new CustomEvent('navigationListResponse', {
+      detail: { tickets: [], metadata: {} }
+    }));
+  }
+});
+
+// Обновление списка тикетов
+window.addEventListener('updateNavigationList', async (event) => {
+  const { tickets, filters, shouldClear } = event.detail;
+  console.log('Content Script: Обновление списка навигации', { 
+    count: tickets.length,
+    shouldClear,
+    filters 
+  });
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'updateNavigationList',
+      tickets,
+      filters,
+      shouldClear
+    });
+    
+    console.log('Content Script: Список навигации обновлён', response);
+    
+    window.dispatchEvent(new CustomEvent('navigationListUpdated', {
+      detail: response
+    }));
+  } catch (error) {
+    console.error('Content Script: Ошибка обновления списка навигации', error);
+  }
+});
+
+// Добавление тикета в навигацию
+window.addEventListener('addTicketToNavigation', async (event) => {
+  const { ticketId, position } = event.detail;
+  console.log('Content Script: Добавление тикета в навигацию', { ticketId, position });
+  
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'addTicketToNavigation',
+      ticketId,
+      position
+    });
+    
+    console.log('Content Script: Тикет добавлен в навигацию', response);
+    
+    window.dispatchEvent(new CustomEvent('ticketAddedToNavigation', {
+      detail: response
+    }));
+  } catch (error) {
+    console.error('Content Script: Ошибка добавления тикета', error);
+  }
+});
+
+// Очистка списка навигации
+window.addEventListener('clearNavigationList', async () => {
+  console.log('Content Script: 🗑️ Запрос на очистку списка навигации');
+  
+  try {
+    await chrome.runtime.sendMessage({ action: 'clearNavigationList' });
+    console.log('Content Script: ✅ Список навигации очищен');
+    
+    window.dispatchEvent(new CustomEvent('navigationListCleared'));
+  } catch (error) {
+    console.error('Content Script: Ошибка очистки списка навигации', error);
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
@@ -448,3 +672,5 @@ window.addEventListener('load', () => {
     processRows();
   }
 });
+
+init();

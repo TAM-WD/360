@@ -1,0 +1,30 @@
+.ticket-nav-buttons-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.ticket-nav-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ticket-nav-buttons button {
+  transition: all 0.2s ease;
+}
+
+.ticket-nav-buttons button:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.ticket-nav-buttons button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ticket-nav-buttons button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

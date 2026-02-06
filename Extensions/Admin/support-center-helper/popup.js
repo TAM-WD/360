@@ -1,15 +1,19 @@
 // Ключи для хранения состояний в chrome.storage
 const STORAGE_KEY_NO_SUBJECT = 'hideNoSubject';
 const STORAGE_KEY_ARCHIVED = 'hideArchived';
+const STORAGE_KEY_NAVIGATION = 'enableNavigation';
 
 // Элементы DOM
 const toggleNoSubject = document.getElementById('toggleNoSubject');
 const toggleArchived = document.getElementById('toggleArchived');
+const toggleNavigation = document.getElementById('toggleNavigation');
 const statusDiv = document.getElementById('status');
 const counterNoSubjectDiv = document.getElementById('counterNoSubject');
 const counterArchivedDiv = document.getElementById('counterArchived');
 const totalTicketsDiv = document.getElementById('totalTickets');
-const versionDiv = document.querySelector('.version');
+const exportBtn = document.getElementById('exportBtn');
+const collectedCountDiv = document.getElementById('collectedCount');
+const clearBtn = document.getElementById('clearBtn');
 
 // Интервал для обновления счётчиков
 let updateInterval = null;
@@ -17,31 +21,45 @@ let updateInterval = null;
 // Загрузка версии из manifest
 function loadVersion() {
   const manifestData = chrome.runtime.getManifest();
+  const versionDiv = document.getElementById('version');
   versionDiv.textContent = `v${manifestData.version}`;
+}
+
+// Обновление счётчика собранных тикетов
+async function updateCollectedCount() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'getTicketsCount' });
+    if (response && response.count !== undefined) {
+      collectedCountDiv.textContent = response.count;
+      exportBtn.disabled = response.count === 0;
+    }
+  } catch (error) {
+    console.error('Support Center Helper: Ошибка получения количества тикетов:', error);
+  }
 }
 
 // Загрузка сохраненных состояний при открытии popup
 async function loadState() {
   try {
-    // Загружаем версию
     loadVersion();
-    
-    // Загружаем состояния из local storage (одинаковые для всех вкладок)
+    updateCollectedCount();
+
     const result = await chrome.storage.local.get([
       STORAGE_KEY_NO_SUBJECT,
-      STORAGE_KEY_ARCHIVED
+      STORAGE_KEY_ARCHIVED,
+      STORAGE_KEY_NAVIGATION
     ]);
     
     const hideNoSubject = result[STORAGE_KEY_NO_SUBJECT] || false;
     const hideArchived = result[STORAGE_KEY_ARCHIVED] || false;
+    const enableNavigation = result[STORAGE_KEY_NAVIGATION] || false;
     
     toggleNoSubject.checked = hideNoSubject;
     toggleArchived.checked = hideArchived;
+    toggleNavigation.checked = enableNavigation;
     
-    // Показываем текущий статус
     await updateCounters();
     
-    // Запускаем автоматическое обновление, если хотя бы одна функция включена
     if (hideNoSubject || hideArchived) {
       startAutoUpdate();
     }
@@ -95,7 +113,6 @@ async function updateCounters() {
           setCounterText(counterArchivedDiv, 'Загрузка...', 'loading');
           totalTicketsDiv.textContent = '—';
         } else {
-          // Обновляем общий счётчик
           totalTicketsDiv.textContent = totalTickets || 0;
           
           // Обновляем счётчик "Без темы"
@@ -170,6 +187,7 @@ function startAutoUpdate() {
   
   updateInterval = setInterval(() => {
     updateCounters();
+    updateCollectedCount();
   }, 2000);
 }
 
@@ -181,14 +199,91 @@ function stopAutoUpdate() {
   }
 }
 
+// Экспорт тикетов в CSV
+async function exportToCSV() {
+  try {
+    exportBtn.disabled = true;
+    
+    const originalHTML = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<span>Подготовка...</span>';
+    
+    const countResponse = await chrome.runtime.sendMessage({ action: 'getTicketsCount' });
+    
+    if (countResponse && countResponse.count > 10000) {
+      const confirmed = confirm(`У вас ${countResponse.count} тикетов. Экспорт может занять время. Продолжить?`);
+      if (!confirmed) {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = originalHTML;
+        return;
+      }
+    }
+    
+    const hideNoSubject = toggleNoSubject.checked;
+    const hideArchived = toggleArchived.checked;
+    
+    console.log('Popup: Экспорт с фильтрами', { hideNoSubject, hideArchived });
+    
+    const response = await chrome.runtime.sendMessage({ 
+      action: 'exportTickets',
+      hideNoSubject: hideNoSubject,
+      hideArchived: hideArchived
+    });
+    
+    if (response && response.csv && response.count > 0) {
+      const blob = new Blob([response.csv], { type: 'text/csv;charset=utf-8;' });
+      
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+      const filename = `support_tickets_${dateStr}_${timeStr}.csv`;
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+    } else if (response && response.count === 0) {
+      showStatus('Нет данных для экспорта (все тикеты отфильтрованы)', 'error');
+    } else {
+      showStatus('Ошибка экспорта', 'error');
+    }
+  } catch (error) {
+    console.error('Support Center Helper: Ошибка экспорта:', error);
+    showStatus('Ошибка экспорта', 'error');
+  } finally {
+    exportBtn.disabled = false;
+    exportBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      <span>Скачать тикеты в CSV</span>
+    `;
+  }
+}
+
 // Сохранение состояния и отправка сообщения в content script
 async function saveState(feature, isEnabled) {
   try {
-    const storageKey = feature === 'noSubject' 
-      ? STORAGE_KEY_NO_SUBJECT
-      : STORAGE_KEY_ARCHIVED;
+    let storageKey;
     
-    // Сохраняем в local storage (общее для всех вкладок)
+    if (feature === 'noSubject') {
+      storageKey = STORAGE_KEY_NO_SUBJECT;
+    } else if (feature === 'archived') {
+      storageKey = STORAGE_KEY_ARCHIVED;
+    } else if (feature === 'navigation') {
+      storageKey = STORAGE_KEY_NAVIGATION;
+    }
+    
     await chrome.storage.local.set({ [storageKey]: isEnabled });
     
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -203,29 +298,26 @@ async function saveState(feature, isEnabled) {
           enabled: isEnabled
         });
         
-        // Убрали уведомления при переключении тогглов
-        
         // Управляем автообновлением
-        const otherToggle = feature === 'noSubject' ? toggleArchived : toggleNoSubject;
-        if (isEnabled || otherToggle.checked) {
+        const isNoSubjectActive = feature === 'noSubject' ? isEnabled : toggleNoSubject.checked;
+        const isArchivedActive = feature === 'archived' ? isEnabled : toggleArchived.checked;
+        if (isNoSubjectActive || isArchivedActive) {
           startAutoUpdate();
-          setTimeout(updateCounters, 500);
+          setTimeout(updateCounters, 250);
         } else {
           stopAutoUpdate();
         }
       } catch (error) {
         console.error('Support Center Helper: Content script не отвечает:', error);
         
-        if (isEnabled || (feature === 'noSubject' ? toggleArchived.checked : toggleNoSubject.checked)) {
+        if (isEnabled || [toggleNoSubject, toggleArchived].some(t => t.checked)) {
           startAutoUpdate();
         } else {
           stopAutoUpdate();
         }
       }
     } else {
-      // Управляем автообновлением
-      const otherToggle = feature === 'noSubject' ? toggleArchived : toggleNoSubject;
-      if (isEnabled || otherToggle.checked) {
+      if (isEnabled || [toggleNoSubject, toggleArchived].some(t => t.checked)) {
         startAutoUpdate();
       } else {
         stopAutoUpdate();
@@ -256,7 +348,14 @@ toggleArchived.addEventListener('change', (e) => {
   saveState('archived', e.target.checked);
 });
 
-// Слушаем изменения в storage (для синхронизации между вкладками)
+toggleNavigation.addEventListener('change', (e) => {
+  saveState('navigation', e.target.checked);
+});
+
+// Обработчик кнопки экспорта
+exportBtn.addEventListener('click', exportToCSV);
+
+// Слушаем изменения в storage
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     if (changes[STORAGE_KEY_NO_SUBJECT]) {
@@ -264,6 +363,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
     if (changes[STORAGE_KEY_ARCHIVED]) {
       toggleArchived.checked = changes[STORAGE_KEY_ARCHIVED].newValue;
+    }
+    if (changes[STORAGE_KEY_NAVIGATION]) {
+      toggleNavigation.checked = changes[STORAGE_KEY_NAVIGATION].newValue;
     }
     
     // Управляем автообновлением
@@ -275,10 +377,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-// Слушаем обновления от content script
+// Слушаем обновления от content script и background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'statsUpdated') {
     updateCounters();
+  }
+  
+  if (message.action === 'ticketsUpdated') {
+    updateCollectedCount();
   }
 });
 
@@ -297,5 +403,15 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Инициализация
+// Очистка собранных тикетов
+clearBtn.addEventListener('click', async () => {
+  try {
+    await chrome.runtime.sendMessage({ action: 'clearTickets' });
+    updateCollectedCount();
+  } catch (error) {
+    console.error('Support Center Helper: Ошибка очистки:', error);
+    showStatus('Ошибка очистки', 'error');
+  }
+});
+
 loadState();
