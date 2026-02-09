@@ -10,7 +10,7 @@ import time
 from threading import Lock
 
 ORGID = '' # ID организации
-TOKEN = '' # OAuth токен с правами на чтение Трекера
+TOKEN = '' # OAuth токен с правами на запись в Трекер
 ORG_TYPE = 'X-Org-Id' # или X-Cloud-Org-ID - тип организации (Яндекс 360 / Cloud Organization)
 
 FILE_PATH = '' # полный путь к файлу .json с ответом на запрос метода getIssueLinks в браузере
