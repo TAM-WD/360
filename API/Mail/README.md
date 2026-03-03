@@ -6,3 +6,4 @@
 - [imap_folder_search.py](https://github.com/TAM-WD/360/blob/main/API/Mail/imap_folder_search.py) - получение числа папок и писем.
 - [imap_to_all_mboxUserFilter.py](https://github.com/TAM-WD/360/blob/main/API/Mail/imap_to_all_mboxUserFilter.py) - выгрузка писем из почтового ящика по заданному фильтру.
 - [MVP-SMTP-reference-answer.py](https://github.com/TAM-WD/360/blob/main/API/Mail/MVP-SMTP-reference-answer.py) - ответ на последнее письмо в ящике по SMTP с сохранением цепочки и истории переписки
+- [parser_send_and_recieve_mail_audit.py](https://github.com/TAM-WD/360/blob/main/API/Mail/parser_send_and_recieve_mail_audit.py) - парсер числа отправки и получения писем за определенный период, оценки вечерной активности
