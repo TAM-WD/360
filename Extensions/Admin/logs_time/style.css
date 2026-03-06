@@ -1,0 +1,123 @@
+#custom-time-filter-btn[data-active="true"] {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#custom-time-filter-popup {
+  position: absolute;
+  z-index: 9999;
+  background: #2b2b2b;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  min-width: 260px;
+  font-family: "YS Text", Arial, sans-serif;
+  user-select: none;
+}
+
+.ctp-popup__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.ctp-now-hint {
+  font-size: 12px;
+  color: #666666;
+  margin-bottom: 12px;
+  text-align: right;
+}
+
+.ctp-now-hint span {
+  color: #888888;
+}
+
+.ctp-popup__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ctp-popup__label {
+  font-size: 13px;
+  color: #aaaaaa;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.ctp-popup__input {
+  flex: 1;
+  height: 36px;
+  padding: 0 10px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+  color-scheme: dark;
+  font-family: inherit;
+}
+
+.ctp-popup__input:focus {
+  border-color: #7b61ff;
+}
+
+.ctp-popup__input::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.4);
+  cursor: pointer;
+}
+
+.ctp-popup__input::-webkit-calendar-picker-indicator:hover {
+  filter: invert(1) opacity(0.8);
+}
+
+.ctp-popup__divider {
+  height: 1px;
+  background: #3d3d3d;
+  margin: 12px 0;
+}
+
+.ctp-popup__error {
+  font-size: 12px;
+  color: #ff6b6b;
+  min-height: 16px;
+  margin-bottom: 8px;
+}
+
+.ctp-popup__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ctp-popup__btn {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, opacity 0.15s;
+  font-family: inherit;
+}
+
+.ctp-popup__btn:hover {
+  opacity: 0.88;
+}
+
+.ctp-popup__btn--apply {
+  background: #7b61ff;
+  color: #ffffff;
+}
+
+.ctp-popup__btn--reset {
+  background: #3a3a3a;
+  color: #cccccc;
+}

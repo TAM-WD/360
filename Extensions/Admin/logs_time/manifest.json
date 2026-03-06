@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Audit Log Time Filter",
+  "version": "1.0.0",
+  "description": "Добавляет фильтр по времени на страницах аудит логов",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://admin.yandex.ru/auditlog-admins*",
+        "https://admin.yandex.ru/auditlog-users*"
+      ],
+      "js": ["content.js"],
+      "css": ["style.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["https://admin.yandex.ru/*"]
+    }
+  ]
+}
