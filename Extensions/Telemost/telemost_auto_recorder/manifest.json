@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Телемост Авто-Запись",
+  "version": "2.5",
+  "description": "Автоматически включает запись и конспектирование на встречах Яндекс Телемост",
+
+  "host_permissions": [
+    "https://telemost.yandex.ru/*",
+    "https://telemost.360.yandex.ru/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+  "https://telemost.yandex.ru/j/*",
+  "https://telemost.360.yandex.ru/j/*"
+]
+,
+      "js": ["content.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+
+  "action": {
+    "default_title": "Телемост Авто-Запись",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
