@@ -7,4 +7,4 @@
 - [imap_to_all_mboxUserFilter.py](https://github.com/TAM-WD/360/blob/main/API/Mail/imap_to_all_mboxUserFilter.py) - выгрузка писем из почтового ящика по заданному фильтру.
 - [MVP-SMTP-reference-answer.py](https://github.com/TAM-WD/360/blob/main/API/Mail/MVP-SMTP-reference-answer.py) - ответ на последнее письмо в ящике по SMTP с сохранением цепочки и истории переписки
 - [parser_send_and_recieve_mail_audit.py](https://github.com/TAM-WD/360/blob/main/API/Mail/parser_send_and_recieve_mail_audit.py) - парсер числа отправки и получения писем за определенный период, оценки вечерной активности
-- [deleting_read_emails.py](https://github.com/TAM-WD/360/blob/main/API/Mail/deleting_read_emails.py) - удаление писем из общего ящика по задаваемым временным рамкам с Basic Auth
+- [deleting_read_emails.py](https://github.com/TAM-WD/360/blob/main/API/Mail/deleting_read_emails.py) - удаление прочитанных писем из общего ящика по задаваемым временным рамкам с Basic Auth
