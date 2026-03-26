@@ -9,3 +9,4 @@
 - [parser_send_and_recieve_mail_audit.py](https://github.com/TAM-WD/360/blob/main/API/Mail/parser_send_and_recieve_mail_audit.py) - парсер числа отправки и получения писем за определенный период, оценки вечерной активности
 - [parser_send_and_recieve_mail_audit_domain.py](https://github.com/TAM-WD/360/blob/main/API/Mail/parser_send_and_recieve_mail_audit_domain.py) - парсер числа отправки и получения писем за определенный период + статистика по доменным зонам
 - [deleting_read_emails.py](https://github.com/TAM-WD/360/blob/main/API/Mail/deleting_read_emails.py) - удаление прочитанных писем из общего ящика по задаваемым временным рамкам с Basic Auth
+- [save_mail_to_mbox_with_filters.py](https://github.com/TAM-WD/360/blob/main/API/Mail/save_mail_to_mbox_with_filters.py) - выгрузка писем в формат mbox с улучшенной работой с IMAP, поддержкой спецсимволов и нескольких готовых режимов выгрузки.
