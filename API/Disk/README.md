@@ -24,3 +24,4 @@
 - [changing_access_level_of_links_to_organization.py](https://github.com/TAM-WD/360/blob/main/API/Disk/changing_access_level_of_links_to_organization.py) - Изменение видимости публичных ссылок с общим доступом на "Только внутри организации"
 - [restore_trash.py](https://github.com/TAM-WD/360/blob/main/API/Disk/restore_trash.py) - восстановление файлов из Корзины полностью или по датам удаления
 - [count_files_and_folders_per_disk_some_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/count_files_and_folders_per_disk_some_users.py) - подсчет числа файлов и папок на Дисках списка сотрудников
+- [find_largest_file_per_shared_disks.py](https://github.com/TAM-WD/360/blob/main/API/Disk/find_largest_file_per_shared_disks.py) - поиск самых крупных файлов на Общих Дисках
