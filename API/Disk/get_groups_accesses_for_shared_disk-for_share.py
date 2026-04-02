@@ -35,7 +35,7 @@ def disk_get_od_accesses(vd_hash): # получение доступов к ОД
     session = requests.Session()
     session.mount('https://', HTTPAdapter(max_retries=retries))
     response = session.get(url, params=params, headers=headers)
-    print(f'{datetime.now()} | disk_get_od_accesses | status: {response.status_code}')
+    print(f'{datetime.now()} | disk_get_od_accesses for {vd_hash} | status: {response.status_code}')
     return response.json()
 
 def api360_get_group_info(orgid, groupId): # получение инфы по группе
@@ -49,29 +49,40 @@ def api360_get_group_info(orgid, groupId): # получение инфы по г
     return response.json()
 
 def get_vd_info(offset):
-    response = disk_get_ods(offset)
-    disks = response.get('items')
-    for disk in disks:
-        vd_hash = disk.get('vd_hash')
-        vd_name = disk.get('name')
-        accesses = disk_get_od_accesses(vd_hash).get('items')
-        for item in accesses:
-            if item['type'] == 'group':
-                group_id = item.get('id')
-                group_info = api360_get_group_info(ORGID, group_id)
-                group_name = group_info.get('name')
-                info = {
-                    'vd_hash': vd_hash,
-                    'vd_name': vd_name,
-                    'groupId': group_id,
-                    'group_name': group_name
-                }
-                writer.writerow(info)
-    total = response.get('total')
-    if total == PERPAGE:
+    while True:
+        response = disk_get_ods(offset)
+        disks = response.get('items')
+        for disk in disks:
+            vd_hash = disk.get('vd_hash')
+            vd_name = disk.get('name')
+            try:
+                accesses_response = disk_get_od_accesses(vd_hash)
+            except requests.exceptions.RetryError as e:
+                print(f'{datetime.now()} | SKIP {vd_hash} ({vd_name}): retries exhausted — {e}')
+                writer.writerow({'vd_hash': vd_hash, 'vd_name': vd_name, 'groupId': 'ERROR', 'group_name': 'retries exhausted'})
+                continue
+            accesses = accesses_response.get('items')
+            if accesses is None:
+                error = accesses_response.get('error', 'unknown error')
+                print(f'{datetime.now()} | SKIP {vd_hash} ({vd_name}): failed to get accesses — {error}')
+                writer.writerow({'vd_hash': vd_hash, 'vd_name': vd_name, 'groupId': 'ERROR', 'group_name': error})
+                continue
+            for item in accesses:
+                if item['type'] == 'group':
+                    group_id = item.get('id')
+                    group_info = api360_get_group_info(ORGID, group_id)
+                    group_name = group_info.get('name')
+                    info = {
+                        'vd_hash': vd_hash,
+                        'vd_name': vd_name,
+                        'groupId': group_id,
+                        'group_name': group_name
+                    }
+                    writer.writerow(info)
+        total = response.get('total')
+        if total != PERPAGE:
+            break
         offset += PERPAGE
-        get_vd_info(offset)
-    return
 
 
 if __name__ == '__main__':
