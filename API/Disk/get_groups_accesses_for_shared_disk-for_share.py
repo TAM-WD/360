@@ -38,14 +38,14 @@ def disk_get_od_accesses(vd_hash): # получение доступов к ОД
     print(f'{datetime.now()} | disk_get_od_accesses for {vd_hash} | status: {response.status_code}')
     return response.json()
 
-def api360_get_group_info(orgid, groupId): # получение инфы по группе
-    url = f'https://api360.yandex.net/directory/v1/org/{orgid}/groups/{groupId}'
+def api360_get_group_info(org_id, group_id): # получение инфы по группе
+    url = f'https://cloud-api.yandex.net/v1/directory/organizations/{org_id}/groups/{group_id}'
     headers = {'Authorization': f"OAuth {TOKEN_GROUPS}"}
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
     session = requests.Session()
     session.mount('https://', HTTPAdapter(max_retries=retries))
     response = session.get(url, headers=headers)
-    print(f'{datetime.now()} | api360_get_group_info | status: {response.status_code}')
+    print(f'{datetime.now()} | api360_get_group_info for {group_id} | status: {response.status_code}')
     return response.json()
 
 def get_vd_info(offset):
@@ -65,13 +65,18 @@ def get_vd_info(offset):
             if accesses is None:
                 error = accesses_response.get('error', 'unknown error')
                 print(f'{datetime.now()} | SKIP {vd_hash} ({vd_name}): failed to get accesses — {error}')
-                writer.writerow({'vd_hash': vd_hash, 'vd_name': vd_name, 'groupId': 'ERROR', 'group_name': error})
+                writer.writerow({'vd_hash': vd_hash, 'vd_name': vd_name, 'groupId': 'ERROR', 'group_name': 'ERROR'})
                 continue
             for item in accesses:
                 if item['type'] == 'group':
                     group_id = item.get('id')
-                    group_info = api360_get_group_info(ORGID, group_id)
-                    group_name = group_info.get('name')
+                    try:
+                        group_info = api360_get_group_info(ORGID, group_id)
+                    except requests.exceptions.RetryError as e:
+                        print(f'{datetime.now()} | SKIP group {group_id} in {vd_hash} ({vd_name}): retries exhausted — {e}')
+                        writer.writerow({'vd_hash': vd_hash, 'vd_name': vd_name, 'groupId': group_id, 'group_name': 'ERROR'})
+                        continue
+                    group_name = group_info.get('name', 'unknown')
                     info = {
                         'vd_hash': vd_hash,
                         'vd_name': vd_name,
