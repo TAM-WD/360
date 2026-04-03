@@ -28,14 +28,14 @@ def api360_get_users(page): # получение списка сотрудник
     print(f'{datetime.now()} | api360_get_users | status: {request.status_code}')
     return response['users'], response['pages']
 
-def api360_get_group_info(orgid, groupId): # получение инфы по группе
-    url = f'https://api360.yandex.net/directory/v1/org/{orgid}/groups/{groupId}'
-    headers = {'Authorization': f"OAuth {ORG_TOKEN}"}
+def api360_get_group_info(org_id, group_id): # получение инфы по группе
+    url = f'https://cloud-api.yandex.net/v1/directory/organizations/{org_id}/groups/{group_id}'
+    headers = {'Authorization': f"OAuth {TOKEN_GROUPS}"}
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
     session = requests.Session()
     session.mount('https://', HTTPAdapter(max_retries=retries))
     response = session.get(url, headers=headers)
-    print(f'{datetime.now()} | api360_get_group_info | status: {response.status_code}')
+    print(f'{datetime.now()} | api360_get_group_info for {group_id} | status: {response.status_code}')
     return response.json()
 
 def disk_get_user_public_resources(org_id,user_id,offset):
