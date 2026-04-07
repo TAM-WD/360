@@ -28,14 +28,14 @@ def api360_get_users(page): # получение списка сотрудник
     print(f'{datetime.now()} | api360_get_users | status: {request.status_code}')
     return response['users'], response['pages']
 
-def api360_get_group_info(org_id, group_id): # получение инфы по группе
-    url = f'https://cloud-api.yandex.net/v1/directory/organizations/{org_id}/groups/{group_id}'
-    headers = {'Authorization': f"OAuth {TOKEN_GROUPS}"}
+def api360_get_group_info(orgid, groupId): # получение инфы по группе
+    url = f'https://api360.yandex.net/directory/v1/org/{orgid}/groups/{groupId}'
+    headers = {'Authorization': f"OAuth {ORG_TOKEN}"}
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
     session = requests.Session()
     session.mount('https://', HTTPAdapter(max_retries=retries))
     response = session.get(url, headers=headers)
-    print(f'{datetime.now()} | api360_get_group_info for {group_id} | status: {response.status_code}')
+    print(f'{datetime.now()} | api360_get_group_info | status: {response.status_code}')
     return response.json()
 
 def disk_get_user_public_resources(org_id,user_id,offset):
@@ -71,32 +71,40 @@ def disk_get_accesses_of_public_link(public_key):
             return None
 
 def get_public_resources(org_id,user_id,offset):
-    resources = disk_get_user_public_resources(org_id,user_id,offset)
-    items = resources.get('items')
-    for item in items:
-        public_hash = item.get('public_hash')
-        public_settings = disk_get_accesses_of_public_link(public_hash)
-        if public_settings != None:
-            accesses = public_settings.get('accesses')
-            for access in accesses:
-                if access['type'] == 'group':
-                    print(access)
-                    group_id = access.get('id')
-                    group_info = api360_get_group_info(ORGID, group_id)
-                    group_name = group_info.get('name')
-                    info = {
-                        'user_id': user_id,
-                        'path': item.get('path'),
-                        'type': item.get('type'),
-                        'public_hash': public_hash,
-                        'group_id': group_id,
-                        'group_name': group_name
-                    }
-                    writer.writerow(info)
-    total = len(items)
-    if total == LIMIT:
-        offset += LIMIT
-        get_public_resources(org_id,user_id,offset)
+    try:
+        resources = disk_get_user_public_resources(org_id,user_id,offset)
+
+
+        items = resources.get('items')
+        for item in items:
+            public_hash = item.get('public_hash')
+            public_settings = disk_get_accesses_of_public_link(public_hash)
+            if public_settings != None:
+                accesses = public_settings.get('accesses')
+                for access in accesses:
+                    if access['type'] == 'group':
+                        print(access)
+                        group_id = access.get('id')
+                        group_info = api360_get_group_info(ORGID, group_id)
+                        group_name = group_info.get('name')
+                        info = {
+                            'user_id': user_id,
+                            'path': item.get('path'),
+                            'type': item.get('type'),
+                            'public_hash': public_hash,
+                            'group_id': group_id,
+                            'group_name': group_name
+                        }
+                        writer.writerow(info)
+        total = len(items)
+        if total == LIMIT:
+            offset += LIMIT
+            get_public_resources(org_id,user_id,offset)
+    except requests.exceptions.RetryError as e:
+        print(f'{datetime.now()} | SKIP {user_id} ({offset}): retries exhausted — {e}')
+        writer.writerow({'user_id': user_id, 'path': 'ERROR', 'type': 'ERROR', 'public_hash': 'ERROR', 'group_id':  'ERROR', 'group_name':  'ERROR'})
+    except Exception as e:
+        print(f"{datetime.now()} | disk_get_user_public_resources  | status: {e}'")
     return print(f'Got public resources for {user_id}')
 
 if __name__ == '__main__':
