@@ -55,7 +55,7 @@ PRESETS = {
 
 RESULTS_FILE = 'auditlog_result' # имя CSV-файла, куда будут записаны итоги анализа
 THREADS = 10  # количество параллельных потоков
-DAYS = 180    # глубина выгрузки в днях
+DAYS = 184    # глубина выгрузки в днях
 
 ts = datetime.now().strftime('%Y%m%d_%H%M%S')
 _log_path = Path(__file__).parent / f'auditlog_{ts}.log'
