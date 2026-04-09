@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 # полный путь к csv-файлу с аудит-логом
-AUDITLOG_PATH = ''
+AUDITLOG_PATH = r''
 
 
 # FILTER — это фильтр, работающий на логических операторах. Поддерживаются операторы AND / OR / с вложенностью через словари.
