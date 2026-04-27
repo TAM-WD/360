@@ -7,3 +7,4 @@
 - [user_activity_checker.py](https://github.com/TAM-WD/360/blob/main/API/Admin/user_activity_checker.py) - проверка последней активности пользователей в Yandex 360.
 - [global_logout_for_blocked_in_AD.py](https://github.com/TAM-WD/360/blob/main/API/Admin/global_logout_for_blocked_in_AD.py) - Logout для заблокированных в AD сотрудников.
 - [activity_chats_and_channels_info.py](https://github.com/TAM-WD/360/blob/main/API/Admin/activity_chats_and_channels_info.py) - выгрузка информации об активных чатах и каналах
+- [write_name_and_department_into_xlsx.py](https://github.com/TAM-WD/360/blob/main/API/Admin/write_name_and_department_into_xlsx.py) — добавить в xlsx ФИО и подразделение по email пользователя.
