@@ -5,3 +5,4 @@
 - [list_of_tracker_users.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/list_of_tracker_users.py) - получение списка пользователей Трекера в организации.
 - [delete_links_multithreading.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/delete_links_multithreading.py) - удаление связей задач по списку из консоли браузера
 - [get_fields_with_filter.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/get_fields_with_filter.py) - выгрузка глобальных и локальных полей в csv с фильтром
+- [Export Tracker.zip](https://github.com/TAM-WD/360/blob/main/API/Tracker/Export%20Tracker.zip) - Экспорт задач из очереди Трекера одной организации и импорту этих задач в другую организацию
