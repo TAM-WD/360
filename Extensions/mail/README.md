@@ -1,1 +1,1 @@
-
+[Extension for links.zip](https://github.com/TAM-WD/360/blob/main/Extensions/mail/Extension%20for%20links.zip) - Расширение делает пути до файлов внутри писем Яндекс Почты кликабельными и открывает по ним проводник в Windows
