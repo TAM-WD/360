@@ -1,4 +1,4 @@
-﻿# Скрипт предназначен для удаления старого ПО Телемоста и обновления обработчика протокола telemost:// для открытия ссылок Телемоста в .msi клиенте.
+# Скрипт предназначен для удаления старого ПО Телемоста и обновления обработчика протокола telemost:// для открытия ссылок Телемоста в .msi клиенте.
 # Логика:
 #   1. Проверяем наличие старого инсталлятора (HKCU\...\Yandex.Telemost.Installer\InstallerPath).
 #   2. Получаем директорию новой версии Telemost (HKLM приоритетнее, иначе HKCU из Yandex.Telemost.2.Installer\InstallDir).
@@ -158,6 +158,15 @@ try {
             New-Item -Path $hkcrKey -Force | Out-Null
         }
         Set-ItemProperty -LiteralPath $hkcrKey -Name '(Default)' -Value $newCommand
+
+        $hkcuClassesKey = 'Registry::HKEY_CURRENT_USER\Software\Classes\telemost\shell\open\command'
+        if (Test-Path -LiteralPath $hkcuClassesKey) {
+            Set-ItemProperty -LiteralPath $hkcuClassesKey -Name '(Default)' -Value $newCommand
+            Write-Host "Обновлено HKCU\Software\Classes\telemost\shell\open\command -> $newCommand"
+        } else {
+            Write-Host "HKCU\Software\Classes\telemost\shell\open\command не существует - пропускаем."
+        }
+
         Write-Host "Обновлено HKCR\telemost\shell\open\command -> $newCommand"
     } else {
         Write-Host "Пропускаем обновление HKCR - нет InstallDir."
