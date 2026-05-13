@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 420px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      background: #f7f8fa;
+      color: #333;
+    }
+    .header {
+      background: #4a90d9;
+      color: white;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .header small {
+      display: block;
+      font-size: 11px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    .section {
+      background: white;
+      margin: 10px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+    }
+    .section-title {
+      background: #f0f4f8;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 12px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .field-group { padding: 8px 12px; }
+    label {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 3px;
+      font-weight: 500;
+    }
+    .input-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #d0d0d0;
+      border-radius: 5px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #4a90d9;
+      box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
+    }
+    input[type="text"].input-error {
+      border-color: #f44336;
+      box-shadow: 0 0 0 2px rgba(244,67,54,0.15);
+    }
+    .btn-current {
+      flex-shrink: 0;
+      padding: 6px 10px;
+      background: #e8f0fb;
+      border: 1px solid #c5d8f5;
+      border-radius: 5px;
+      color: #4a90d9;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-current:hover { background: #d0e4fb; }
+    .hint { font-size: 11px; color: #888; margin-top: 3px; }
+    .hint.hint-error { color: #f44336; }
+    .swap-row {
+      display: flex;
+      justify-content: center;
+      padding: 4px 12px 6px;
+    }
+    .btn-swap {
+      padding: 4px 20px;
+      background: #f0f4f8;
+      border: 1px solid #d0d8e8;
+      border-radius: 20px;
+      color: #4a90d9;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-swap:hover {
+      background: #e0eaf8;
+      border-color: #4a90d9;
+    }
+    .pages-list {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 8px 12px;
+    }
+    .page-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 3px;
+      background: #f9f9f9;
+      border: 1px solid #eee;
+      gap: 8px;
+    }
+    .page-item:hover { background: #f0f4f8; }
+    .page-item input[type="checkbox"] {
+      width: 14px; height: 14px;
+      flex-shrink: 0; cursor: pointer;
+    }
+    .page-info { flex: 1; min-width: 0; }
+    .page-title {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-url { font-size: 10px; color: #888; }
+    .page-status {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .status-pending { background: #e0e0e0; color: #999; }
+    .status-success { background: #4caf50; color: white; }
+    .status-error   { background: #f44336; color: white; }
+    .status-running { background: #ff9800; color: white; }
+    .empty-hint {
+      padding: 20px; text-align: center;
+      color: #aaa; font-size: 12px;
+    }
+    .actions {
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid #eee;
+    }
+    button {
+      flex: 1; padding: 8px; border: none;
+      border-radius: 5px; cursor: pointer;
+      font-size: 13px; font-weight: 500;
+      transition: all 0.2s;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #btn-scan { background: #4a90d9; color: white; }
+    #btn-scan:hover:not(:disabled) { background: #357abd; }
+    #btn-move { background: #4caf50; color: white; }
+    #btn-move:hover:not(:disabled) { background: #388e3c; }
+    #btn-select-all {
+      flex: 0 0 auto;
+      background: #eee; color: #444;
+      padding: 8px 12px; font-size: 12px;
+    }
+    #btn-select-all:hover { background: #ddd; }
+    .log-area {
+      padding: 8px 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .log-line {
+      padding: 3px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .log-line.success { color: #2e7d32; }
+    .log-line.error   { color: #c62828; }
+    .log-line.info    { color: #555; }
+    .log-line.warn    { color: #e65100; }
+    .progress-bar {
+      height: 4px; background: #e0e0e0;
+      margin: 0 12px 8px; border-radius: 2px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: #4caf50;
+      border-radius: 2px; transition: width 0.3s; width: 0%;
+    }
+    .reload-bar {
+      display: none;
+      margin: 0 10px 10px;
+      padding: 10px 14px;
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .reload-bar span { font-size: 12px; color: #2e7d32; }
+    .reload-bar button {
+      flex: 0 0 auto;
+      padding: 6px 14px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .reload-bar button:hover { background: #388e3c; }
+    .wrong-page {
+      padding: 40px 30px;
+      text-align: center;
+    }
+    .wrong-page .title {
+      font-size: 14px; font-weight: 600;
+      color: #333; margin-bottom: 8px;
+    }
+    .wrong-page .domain {
+      font-size: 13px;
+      background: #f0f4f8;
+      border: 1px solid #d0d8e8;
+      border-radius: 6px;
+      padding: 7px 14px;
+      display: inline-block;
+      color: #4a90d9;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+    .wrong-page .sub {
+      font-size: 12px; color: #aaa;
+      margin-bottom: 20px;
+    }
+    .wrong-page a {
+      display: inline-block;
+      padding: 8px 22px;
+      background: #4a90d9;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .wrong-page a:hover { background: #357abd; }
+
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .dialog-overlay.visible { display: flex; }
+    .dialog {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .dialog-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .dialog-text {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .dialog-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .dialog-buttons button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .btn-dialog-yes {
+      background: #4a90d9;
+      color: white;
+    }
+    .btn-dialog-yes:hover { background: #357abd; }
+    .btn-dialog-no {
+      background: #eee;
+      color: #444;
+    }
+    .btn-dialog-no:hover { background: #ddd; }
+  </style>
+</head>
+<body>
+
+<div id="wrong-page" class="wrong-page" style="display:none">
+  <div class="title">Расширение работает только на</div>
+  <div class="domain">wiki.yandex.ru</div>
+  <div class="sub">Откройте страницу Wiki и нажмите на расширение снова</div>
+  <a href="https://wiki.yandex.ru/" target="_blank">Перейти на Wiki</a>
+</div>
+
+<div id="main-content">
+  <div class="header">
+    Wiki Page Mover
+    <small>Перенос страниц между разделами</small>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Настройки</div>
+    <div class="field-group">
+      <label>Папка-источник</label>
+      <div class="input-row">
+        <input type="text" id="source-path" placeholder="название-раздела">
+        <button class="btn-current" id="btn-use-current">Текущая</button>
+      </div>
+      <div class="hint" id="source-hint">Введите название раздела или нажмите "Текущая"</div>
+    </div>
+    <div class="swap-row">
+      <button class="btn-swap" id="btn-swap">поменять местами</button>
+    </div>
+    <div class="field-group">
+      <label>Папка назначения</label>
+      <div class="input-row">
+        <input type="text" id="target-path" placeholder="название-раздела">
+        <button class="btn-current" id="btn-use-current-target">Текущая</button>
+      </div>
+      <div class="hint" id="target-hint">Введите название раздела или нажмите "Текущая"</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Страницы</div>
+    <div class="pages-list" id="pages-list">
+      <div class="empty-hint">Нажмите "Сканировать"</div>
+    </div>
+    <div class="actions">
+      <button id="btn-select-all">Все</button>
+      <button id="btn-scan">Сканировать</button>
+      <button id="btn-move" disabled>Перенести</button>
+    </div>
+  </div>
+
+  <div class="section" id="log-section" style="display:none">
+    <div class="section-title">Статус</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="log-area" id="log-area"></div>
+  </div>
+
+  <div class="reload-bar" id="reload-bar">
+    <span>Перенос завершён — обновите страницу</span>
+    <button id="btn-reload">Обновить страницу</button>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dialog-overlay">
+  <div class="dialog">
+    <div class="dialog-title">Различие прав доступа</div>
+    <div class="dialog-text" id="dialog-text">
+      Папка назначения имеет другие права доступа.<br>
+      Скопировать права из папки назначения на переносимые страницы?
+    </div>
+    <div class="dialog-buttons">
+      <button class="btn-dialog-yes" id="btn-dialog-yes">Да, скопировать</button>
+      <button class="btn-dialog-no"  id="btn-dialog-no">Нет, оставить</button>
+    </div>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>

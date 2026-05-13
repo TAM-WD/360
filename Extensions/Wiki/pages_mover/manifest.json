@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Wiki Page Mover",
+  "version": "1.0",
+  "description": "Массовый перенос страниц Yandex Wiki",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["https://wiki.yandex.ru/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Wiki Page Mover"
+  }
+}
