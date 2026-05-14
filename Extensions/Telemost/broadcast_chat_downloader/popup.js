@@ -57,7 +57,6 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   } catch (error) {
     status.className = 'error';
     status.textContent = `Ошибка: ${error.message}`;
-    console.error('Export error:', error);
     warningBox.style.display = 'none';
   } finally {
     button.disabled = false;
@@ -87,27 +86,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function extractChatData() {
   try {
-    const scrollContainer = document.querySelector('.ui-InfiniteList[data-scroll-container="true"]');
+    const scrollContainer = document.querySelector('.ui-InfiniteList-ScrollContainer[data-scroll-container="true"]');
     const infiniteListContainer = document.querySelector('.ui-InfiniteList-Container');
     const chatContainer = document.querySelector('.yamb-conversation__content');
-    
+
     if (!scrollContainer || !infiniteListContainer || !chatContainer) {
-      return { error: 'Чат не найден на странице', pairs: [], stats: { questions: 0, answers: 0 } };
+      const missing = [];
+      if (!scrollContainer) missing.push('ui-InfiniteList-ScrollContainer');
+      if (!infiniteListContainer) missing.push('ui-InfiniteList-Container');
+      if (!chatContainer) missing.push('yamb-conversation__content');
+      return {
+        error: `Чат не найден на странице. Не найдены: ${missing.join(', ')}`,
+        pairs: [],
+        stats: { questions: 0, answers: 0 }
+      };
     }
 
-    console.log('🔄 Начинаем прокрутку к началу чата...');
-
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    const scrollWithWheel = (element, deltaY) => {
-      const event = new WheelEvent('wheel', {
-        deltaY: deltaY,
-        deltaMode: 0,
-        bubbles: true,
-        cancelable: true
-      });
-      element.dispatchEvent(event);
-    };
 
     const getTransformY = (element) => {
       const style = window.getComputedStyle(element);
@@ -133,64 +128,59 @@ async function extractChatData() {
 
     const getLastMessageId = () => {
       const articles = Array.from(chatContainer.querySelectorAll('article.message'));
-      
       for (let i = articles.length - 1; i >= 0; i--) {
         const article = articles[i];
-        const isSystemMessage = article.querySelector('.yamb-message-system');
-        
-        if (!isSystemMessage) {
-          const messageTextSpan = article.querySelector('span[data-copyable="true"]');
-          if (messageTextSpan) {
-            const labelledBy = article.getAttribute('aria-labelledby');
-            if (labelledBy) {
-              return labelledBy.split(' ')[0];
-            }
+        const hasMessageRow = article.querySelector('.yamb-message-row');
+        if (!hasMessageRow) continue;
+        const messageTextSpan = article.querySelector('span[data-copyable="true"]');
+        if (messageTextSpan) {
+          const labelledBy = article.getAttribute('aria-labelledby');
+          if (labelledBy) {
+            return labelledBy.split(' ')[0];
           }
         }
       }
-      
       return null;
     };
 
-    console.log('📜 Прокрутка к самому началу...');
     let previousTransformY = getTransformY(infiniteListContainer);
     let previousFirstMessageId = getFirstMessageId();
     let stableCount = 0;
     let scrollAttempts = 0;
 
     while (stableCount < 15) {
-      scrollWithWheel(scrollContainer, -500);
+      scrollContainer.scrollTop = 0;
+      const upEvent = new WheelEvent('wheel', {
+        deltaY: -5000,
+        deltaMode: 0,
+        bubbles: true,
+        cancelable: true
+      });
+      scrollContainer.dispatchEvent(upEvent);
+
       await sleep(300);
-      
+
       const currentTransformY = getTransformY(infiniteListContainer);
       const currentFirstMessageId = getFirstMessageId();
-      
       const transformStable = Math.abs(currentTransformY - previousTransformY) < 5;
       const messageStable = currentFirstMessageId === previousFirstMessageId;
-      
+
       if (transformStable && messageStable) {
         stableCount++;
-        console.log(`📍 Позиция стабильна (${stableCount}/15): Transform: ${currentTransformY}px, Первое сообщение: ${currentFirstMessageId}`);
       } else {
         stableCount = 0;
-        if (!messageStable) {
-          console.log(`📜 Загружены новые сообщения. Первое: ${currentFirstMessageId}`);
-        }
       }
-      
+
       previousTransformY = currentTransformY;
       previousFirstMessageId = currentFirstMessageId;
       scrollAttempts++;
-      
-      if (scrollAttempts % 50 === 0) {
-        console.log(`📊 Выполнено ${scrollAttempts} попыток прокрутки вверх`);
+
+      if (scrollAttempts > 300) {
+        break;
       }
     }
 
-    console.log(`✅ Достигнут верх чата после ${scrollAttempts} попыток`);
     await sleep(2000);
-
-    console.log('📥 Начинаем сбор сообщений...');
 
     const allMessages = new Map();
     let noNewMessagesCount = 0;
@@ -201,7 +191,7 @@ async function extractChatData() {
     const collectVisibleMessages = () => {
       const articles = chatContainer.querySelectorAll('article.message');
       let newCount = 0;
-      
+
       articles.forEach((article) => {
         const labelledBy = article.getAttribute('aria-labelledby');
         if (!labelledBy) return;
@@ -209,30 +199,30 @@ async function extractChatData() {
         const messageId = labelledBy.split(' ')[0];
         if (allMessages.has(messageId)) return;
 
-        const isSystemMessage = article.querySelector('.yamb-message-system');
-        if (isSystemMessage) return;
+        const hasMessageRow = article.querySelector('.yamb-message-row');
+        if (!hasMessageRow) return;
 
         const messageTextSpan = article.querySelector('span[data-copyable="true"]');
         if (!messageTextSpan) return;
 
         const messageText = messageTextSpan.textContent.trim();
+        if (!messageText) return;
+
         const timeElement = article.querySelector('.yamb-message-info__time');
-        const time = timeElement ? (timeElement.getAttribute('aria-label') || timeElement.textContent.trim()) : '';
+        const time = timeElement
+          ? (timeElement.getAttribute('aria-label') || timeElement.textContent.trim())
+          : '';
 
         const isOwnMessage = article.querySelector('.yamb-message-row_own') !== null;
 
-        let sender = '';
+        let sender = null;
         const senderElement = article.querySelector('.yamb-message-user');
         if (senderElement) {
           sender = senderElement.getAttribute('aria-label') || '';
           if (!sender) {
             const nameElement = senderElement.querySelector('.yamb-message-user__name');
-            sender = nameElement ? nameElement.textContent.trim() : '';
+            sender = nameElement ? nameElement.textContent.trim() : null;
           }
-        }
-        
-        if (!sender) {
-          sender = null;
         }
 
         const replySection = article.querySelector('.yamb-message-reply');
@@ -244,7 +234,6 @@ async function extractChatData() {
           isAnswer = true;
           const replyTitle = replySection.querySelector('.yamb-message-reply__title');
           const replyDescription = replySection.querySelector('.yamb-message-reply__description');
-          
           questionAuthor = replyTitle ? replyTitle.textContent.trim() : '';
           questionText = replyDescription ? replyDescription.textContent.trim() : '';
         }
@@ -259,26 +248,25 @@ async function extractChatData() {
           questionText: questionText,
           questionAuthor: questionAuthor
         });
-        
+
         newCount++;
       });
-      
+
       return newCount;
     };
 
     collectVisibleMessages();
-    console.log(`📊 Начальных сообщений: ${allMessages.size}`);
 
     while (noNewMessagesCount < maxNoNewMessages) {
       const currentLastMessageId = getLastMessageId();
-      
+
       if (currentLastMessageId === previousLastMessageId) {
         sameLastMessageCount++;
       } else {
         sameLastMessageCount = 0;
         previousLastMessageId = currentLastMessageId;
       }
-      
+
       let scrollStep;
       if (sameLastMessageCount > 8) {
         scrollStep = 150;
@@ -287,46 +275,46 @@ async function extractChatData() {
       } else {
         scrollStep = 50;
       }
-      
-      scrollWithWheel(scrollContainer, scrollStep);
-      
+
+      scrollContainer.scrollTop += scrollStep;
+      const downEvent = new WheelEvent('wheel', {
+        deltaY: scrollStep,
+        deltaMode: 0,
+        bubbles: true,
+        cancelable: true
+      });
+      scrollContainer.dispatchEvent(downEvent);
+
       const waitTime = sameLastMessageCount > 5 ? 500 : 350;
       await sleep(waitTime);
-      
+
       const newMessages = collectVisibleMessages();
-      
+
       if (newMessages === 0 && sameLastMessageCount > 5) {
         noNewMessagesCount++;
-        console.log(`⏳ Новых сообщений не найдено (${noNewMessagesCount}/${maxNoNewMessages}), последнее: ${currentLastMessageId}, попыток на одном месте: ${sameLastMessageCount}`);
       } else if (newMessages > 0) {
         noNewMessagesCount = 0;
         sameLastMessageCount = 0;
-        console.log(`📊 Собрано сообщений: ${allMessages.size} (+${newMessages})`);
       }
-      
+
       if (sameLastMessageCount > 20) {
-        console.log(`✅ Достигнут конец чата: последнее сообщение не меняется ${sameLastMessageCount} раз`);
         break;
       }
     }
 
-    console.log(`✅ Всего собрано уникальных сообщений: ${allMessages.size}`);
-
     const messagesArray = Array.from(allMessages.values());
 
     let myRealName = null;
-    
+
     messagesArray.forEach(msg => {
       if (msg.type === 'Ответ' && msg.sender && !msg.isOwnMessage) {
-        const originalQuestion = messagesArray.find(m => 
-          m.type === 'Вопрос' && 
+        const originalQuestion = messagesArray.find(m =>
+          m.type === 'Вопрос' &&
           m.message.toLowerCase().trim() === msg.questionText.toLowerCase().trim() &&
           m.isOwnMessage
         );
-        
         if (originalQuestion && msg.questionAuthor) {
           myRealName = msg.questionAuthor;
-          console.log(`👤 Найдено реальное имя пользователя: ${myRealName}`);
         }
       }
     });
@@ -339,16 +327,12 @@ async function extractChatData() {
             m.questionText.toLowerCase().trim() === msg.message.toLowerCase().trim() &&
             m.questionAuthor
           );
-          
           if (answerToMyQuestion) {
             myRealName = answerToMyQuestion.questionAuthor;
-            console.log(`👤 Найдено реальное имя из вопроса: ${myRealName}`);
           }
         }
       });
     }
-
-    console.log(`✅ Реальное имя пользователя: ${myRealName || 'Не найдено'}`);
 
     const questionAuthors = new Map();
     messagesArray.forEach(msg => {
@@ -366,14 +350,10 @@ async function extractChatData() {
           msg.sender = myRealName;
         } else if (!msg.sender) {
           const key = msg.message.toLowerCase().trim();
-          if (questionAuthors.has(key)) {
-            msg.sender = questionAuthors.get(key);
-          } else {
-            msg.sender = 'Вы';
-          }
+          msg.sender = questionAuthors.has(key) ? questionAuthors.get(key) : 'Вы';
         }
       }
-      
+
       if (msg.type === 'Ответ') {
         if (!msg.sender && msg.isOwnMessage && myRealName) {
           msg.sender = myRealName;
@@ -393,7 +373,7 @@ async function extractChatData() {
 
     const pairs = [];
     const questionMap = new Map();
-    
+
     messagesArray.forEach(msg => {
       if (msg.type === 'Вопрос') {
         const key = `${msg.message.toLowerCase().trim()}_${msg.sender}`;
@@ -414,7 +394,7 @@ async function extractChatData() {
       if (msg.type === 'Ответ') {
         const key = `${msg.questionText.toLowerCase().trim()}_${msg.questionAuthor}`;
         const pair = questionMap.get(key);
-        
+
         if (pair) {
           pair.answers.push({
             answerTime: msg.time,
@@ -425,11 +405,13 @@ async function extractChatData() {
         } else {
           const answerKey = `${msg.questionText.toLowerCase().trim()}_${msg.questionAuthor}`;
           const originalAnswer = answerTextMap.get(answerKey);
-          
+
           if (originalAnswer) {
-            const originalPair = questionMap.get(`${originalAnswer.questionText.toLowerCase().trim()}_${originalAnswer.questionAuthor}`);
+            const originalPair = questionMap.get(
+              `${originalAnswer.questionText.toLowerCase().trim()}_${originalAnswer.questionAuthor}`
+            );
             if (originalPair) {
-              const targetAnswer = originalPair.answers.find(a => 
+              const targetAnswer = originalPair.answers.find(a =>
                 a.answerText.toLowerCase().trim() === originalAnswer.message.toLowerCase().trim() &&
                 a.answerAuthor === originalAnswer.sender
               );
@@ -448,7 +430,7 @@ async function extractChatData() {
 
     const flatPairs = [];
     let questionNumber = 1;
-    
+
     pairs.forEach(pair => {
       if (pair.answers.length === 0) {
         flatPairs.push({
@@ -510,12 +492,9 @@ async function extractChatData() {
       answers: messagesArray.filter(m => m.type === 'Ответ').length
     };
 
-    console.log('✅ Обработка завершена!');
-    console.log(`📊 Статистика: ${stats.questions} вопросов, ${stats.answers} ответов`);
-
     return { pairs: flatPairs, stats };
+
   } catch (error) {
-    console.error('❌ Ошибка:', error);
     return { error: error.message, pairs: [], stats: { questions: 0, answers: 0 } };
   }
 }
@@ -559,14 +538,12 @@ function createExcelFile(data) {
   if (!ws['!merges']) ws['!merges'] = [];
 
   let currentRow = 1;
-  
-  data.pairs.forEach((pair, index) => {
+
+  data.pairs.forEach((pair) => {
     currentRow++;
-    
     if (pair.answersCount > 1 && pair.isFirstAnswer) {
       const startRow = currentRow - 1;
       const endRow = startRow + pair.answersCount - 1;
-      
       ws['!merges'].push(
         { s: { r: startRow, c: 0 }, e: { r: endRow, c: 0 } },
         { s: { r: startRow, c: 1 }, e: { r: endRow, c: 1 } },
