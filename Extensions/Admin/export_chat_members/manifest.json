@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Yandex Messenger — Chat Members Exporter",
+  "version": "1.0.0",
+  "description": "Позволяет выгружать участников чата из панели администратора организации Яндекс 360",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://admin.yandex.ru/*",
+    "https://admin.360.yandex.ru/*"
+  ],
+  "action": {
+    "default_title": "Export chat members",
+    "default_popup": "src/popup/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://admin.yandex.ru/messenger-chats/*",
+        "https://admin.360.yandex.ru/messenger-chats/*"
+      ],
+      "js": ["src/page/interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://admin.yandex.ru/messenger-chats/*",
+        "https://admin.360.yandex.ru/messenger-chats/*"
+      ],
+      "js": ["src/content/content-script.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    }
+  ]
+}

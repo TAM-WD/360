@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Export chat members</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1>Участники чата</h1>
+      <span id="status" class="status status--idle">ожидание</span>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <span class="row__label">Chat ID</span>
+        <span id="chat-id" class="row__value row__value--mono" title="">—</span>
+      </div>
+      <div class="row">
+        <span class="row__label">Записано</span>
+        <span id="count" class="row__value row__value--strong">0</span>
+      </div>
+      <div id="error-row" class="row row--error" hidden>
+        <span class="row__label">Ошибка</span>
+        <span id="error" class="row__value"></span>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="start" class="btn btn--primary" disabled>Начать выгрузку</button>
+      <button id="download" class="btn" disabled>Скачать CSV</button>
+      <button id="reset" class="btn btn--ghost">Сброс</button>
+    </section>
+
+    <footer class="hint" id="hint">
+      Откройте раздел <code>Мессенджер</code> → <code>Чаты и каналы</code>, найдите нужный чат и откройте его.
+      Если в чате больше 20 участников, используйте кнопку <code>Начать выгрузку</code>, затем <code>Скачать CSV</code>.
+    </footer>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
