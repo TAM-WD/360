@@ -10,3 +10,4 @@
 - [activity_chats_and_channels_info.py](https://github.com/TAM-WD/360/blob/main/API/Admin/activity_chats_and_channels_info.py) - выгрузка информации об активных чатах и каналах
 - [write_name_and_department_into_xlsx.py](https://github.com/TAM-WD/360/blob/main/API/Admin/write_name_and_department_into_xlsx.py) — добавить в xlsx ФИО и подразделение по email пользователя.
 - [2fa_manager](https://github.com/TAM-WD/360/blob/main/API/Admin/2fa_manager.py) - включение и выключения 2fa пользователей организации.
+- [groups permisson and members.py](https://github.com/TAM-WD/360/blob/main/API/Admin/groups%20permisson%20and%20members.py) - выгрузка информации по группам, их наполнению и доступом написания на эти группы
