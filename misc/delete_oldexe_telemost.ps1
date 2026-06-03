@@ -10,18 +10,6 @@
 #
 # NOTE: This file is intentionally ASCII-only (no Cyrillic / smart punctuation) so it parses
 #       correctly under Windows PowerShell 5.1 even if the UTF-8 BOM is stripped during transfer.
-
-#Requires -Version 5.1
-
-[CmdletBinding()]
-param(
-    # SID of the original (non-elevated) user - passed to the child process after UAC
-    # so we can read that user's HKCU via HKEY_USERS\<SID>.
-    [string]$OriginalUserSid
-)
-
-$ErrorActionPreference = 'Stop'
-
 # --- Run settings ---
 # $RunMode = 'Admin' -> full mode for a user WITH administrator rights:
 #                       find/remove the legacy installer and update the telemost://
@@ -42,6 +30,17 @@ $RunMode        = 'Admin'
 $AskForAdmin    = $false
 $ForceUninstall = $false
 $DoNotExit      = $false
+
+#Requires -Version 5.1
+
+[CmdletBinding()]
+param(
+    # SID of the original (non-elevated) user - passed to the child process after UAC
+    # so we can read that user's HKCU via HKEY_USERS\<SID>.
+    [string]$OriginalUserSid
+)
+
+$ErrorActionPreference = 'Stop'
 
 function Pause-Exit {
     param([int]$Code = 0)
