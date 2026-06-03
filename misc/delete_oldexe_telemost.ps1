@@ -17,10 +17,20 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # --- Настройки запуска ---
-# $AskForAdmin = $true  -> при отсутствии прав админа скрипт перезапустится с UAC.
+# $RunMode = 'Admin' -> полный режим для пользователя с правами администратора:
+#                       поиск/удаление старого инсталлятора и обновление обработчика
+#                       telemost:// во всех ветках (HKCR, HKLM, HKCU).
+# $RunMode = 'User'  -> режим для пользователя БЕЗ прав администратора:
+#                       повышение прав не запрашивается, удаление старой версии не
+#                       выполняется, обновляется только ветка
+#                       HKEY_CURRENT_USER\Software\Classes\telemost\shell\open\command.
+# $AskForAdmin = $true  -> (только в режиме 'Admin') при отсутствии прав админа скрипт
+#                          перезапустится с UAC.
 # $AskForAdmin = $false -> повышение прав не запрашивается (часть действий может не выполниться).
 # $DoNotExit   = $true  -> в конце работы и при ошибке окно ждёт нажатия Enter.
 # $DoNotExit   = $false -> скрипт завершается сразу, без паузы.
+
+$RunMode     = 'Admin'
 $AskForAdmin = $false
 $DoNotExit   = $false
 
@@ -39,8 +49,10 @@ function Test-IsAdministrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-# --- Самоповышение прав до администратора ---
-if ($AskForAdmin -and -not (Test-IsAdministrator)) {
+# --- Самоповышение прав до администратора (только в режиме 'Admin') ---
+if ($RunMode -eq 'User') {
+    Write-Host "Режим 'User': работаем без прав администратора, повышение не запрашивается."
+} elseif ($AskForAdmin -and -not (Test-IsAdministrator)) {
     Write-Host "Требуются права администратора. Перезапуск скрипта с повышением..."
     $scriptPath = $MyInvocation.MyCommand.Path
     if (-not $scriptPath) {
@@ -178,24 +190,30 @@ try {
     }
 
     # --- Шаг 1: проверяем старый инсталлятор и забираем UninstallString ---
-    Write-Host "[Шаг 1] Поиск старого инсталлятора Yandex.Telemost.Installer..."
-    $oldInstallerPath = Get-HkcuValue -SubPath 'Software\Yandex\Yandex.Telemost.Installer' -Name 'InstallerPath'
-
-    $uninstallString = $null
-    if ($oldInstallerPath) {
-        Write-Host "Найден старый инсталлятор: $oldInstallerPath"
-        Write-Host "[Шаг 1] Поиск UninstallString..."
-        $uninstallString = Get-HkcuValue `
-            -SubPath 'Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexTelemost' `
-            -Name 'UninstallString'
-        if ($uninstallString) {
-            $uninstallString = $uninstallString.TrimEnd() + ' -silent'
-            Write-Host "UninstallString: $uninstallString"
-        } else {
-            Write-Host "UninstallString не найден в HKCU\...\Uninstall\YandexTelemost"
-        }
+    # В режиме 'User' удаление старой версии не требуется - шаг пропускаем целиком.
+    $oldInstallerPath = $null
+    $uninstallString  = $null
+    if ($RunMode -eq 'User') {
+        Write-Host "[Шаг 1] Режим 'User': поиск/удаление старого инсталлятора пропущены."
     } else {
-        Write-Host "Старый инсталлятор (Yandex.Telemost.Installer) не найден - пропускаем удаление."
+        Write-Host "[Шаг 1] Поиск старого инсталлятора Yandex.Telemost.Installer..."
+        $oldInstallerPath = Get-HkcuValue -SubPath 'Software\Yandex\Yandex.Telemost.Installer' -Name 'InstallerPath'
+
+        if ($oldInstallerPath) {
+            Write-Host "Найден старый инсталлятор: $oldInstallerPath"
+            Write-Host "[Шаг 1] Поиск UninstallString..."
+            $uninstallString = Get-HkcuValue `
+                -SubPath 'Software\Microsoft\Windows\CurrentVersion\Uninstall\YandexTelemost' `
+                -Name 'UninstallString'
+            if ($uninstallString) {
+                $uninstallString = $uninstallString.TrimEnd() + ' -silent'
+                Write-Host "UninstallString: $uninstallString"
+            } else {
+                Write-Host "UninstallString не найден в HKCU\...\Uninstall\YandexTelemost"
+            }
+        } else {
+            Write-Host "Старый инсталлятор (Yandex.Telemost.Installer) не найден - пропускаем удаление."
+        }
     }
 
     # --- Шаг 2: ищем InstallDir новой версии (приоритет HKLM, потом HKCU) ---
@@ -278,11 +296,19 @@ try {
         $exeFullPath = Join-Path -Path $installDir -ChildPath 'YandexTelemost.exe'
         $newCommand  = '"{0}" --conf-url="%1"' -f $exeFullPath
 
-        $protocolKeys = @(
-            'Registry::HKEY_CLASSES_ROOT\telemost\shell\open\command',
-            'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Classes\telemost\shell\open\command',
-            'Registry::HKEY_CURRENT_USER\Software\Classes\telemost\shell\open\command'
-        )
+        # В режиме 'User' (без прав админа) трогаем только HKCU-ветку обработчика протокола;
+        # в режиме 'Admin' обновляем все ветки (HKCR, HKLM, HKCU).
+        if ($RunMode -eq 'User') {
+            $protocolKeys = @(
+                'Registry::HKEY_CURRENT_USER\Software\Classes\telemost\shell\open\command'
+            )
+        } else {
+            $protocolKeys = @(
+                'Registry::HKEY_CLASSES_ROOT\telemost\shell\open\command',
+                'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Classes\telemost\shell\open\command',
+                'Registry::HKEY_CURRENT_USER\Software\Classes\telemost\shell\open\command'
+            )
+        }
         foreach ($key in $protocolKeys) {
             if (Test-Path -LiteralPath $key) {
                 Set-ItemProperty -LiteralPath $key -Name '(Default)' -Value $newCommand
