@@ -148,6 +148,7 @@ if __name__ == '__main__':
         for page in pages:
             users = get_users(page)[1]
             for user in users:
+                ban_needed = False
                 email = user['email']
                 uid = user['id']
                 if int(uid) > 1130000000000000:
