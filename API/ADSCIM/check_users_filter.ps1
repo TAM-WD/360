@@ -23,7 +23,7 @@ SCRIPT IS IN BETA. ALWAYS RECHECK THE OUTPUT
 $ConfigPath   = ''
 
 # The user to look up. Always set manually.
-$User         = '12345678'
+$User         = ''
 
 # Hardcoded fallback values (used when $ConfigPath is empty / file not found).
 $Attribute    = 'samaccountname'
@@ -87,6 +87,11 @@ if ($ConfigPath -and (Test-Path -LiteralPath $ConfigPath)) {
     Write-Host "Config    : $ConfigPath not found - using hardcoded values." -ForegroundColor Yellow
 } else {
     Write-Host "Config    : no path set - using hardcoded values." -ForegroundColor Cyan
+}
+
+# Work mail attribute is always checked, regardless of RequiredProperties.
+if ($RequiredProperties -notcontains $WorkMailAttr) {
+    $RequiredProperties = @($WorkMailAttr) + $RequiredProperties
 }
 
 # ---------------------------------------------------------------------------
@@ -197,23 +202,14 @@ function Get-PropValues {
     return @()
 }
 
-$mailValues = Get-PropValues $found $WorkMailAttr
-if ($mailValues.Count -gt 0) {
-    Write-Host ("WorkMail ({0}): {1}" -f $WorkMailAttr, ($mailValues -join ', ')) -ForegroundColor Green
-} else {
-    Write-Host ("WorkMail ({0}): <no value>" -f $WorkMailAttr) -ForegroundColor Yellow
-}
-
-if ($RequiredProperties.Count -gt 0) {
-    Write-Host ""
-    Write-Host "RequiredProperty:"
-    foreach ($p in $RequiredProperties) {
-        $vals = Get-PropValues $found $p
-        if ($vals.Count -gt 0) {
-            Write-Host ("  present  {0} = {1}" -f $p, ($vals -join ', ')) -ForegroundColor Green
-        } else {
-            Write-Host ("  MISSING  {0}" -f $p) -ForegroundColor Red
-        }
+Write-Host "Required attributes:"
+foreach ($p in $RequiredProperties) {
+    $vals = Get-PropValues $found $p
+    $tag  = if ($p -eq $WorkMailAttr) { ' (WorkMail)' } else { '' }
+    if ($vals.Count -gt 0) {
+        Write-Host ("  present  {0}{1} = {2}" -f $p, $tag, ($vals -join ', ')) -ForegroundColor Green
+    } else {
+        Write-Host ("  MISSING  {0}{1}" -f $p, $tag) -ForegroundColor Red
     }
 }
 Write-Host ""
@@ -222,11 +218,21 @@ Write-Host ""
 
 $clauses = Get-LeafClauses $UsersFilter
 
-Write-Host ("Checking {0} clause(s):" -f $clauses.Count)
+Write-Host ("Checking {0} check(s):" -f ($clauses.Count + 1))
 Write-Host ("-" * 70)
 
 $passed = 0
 $failed = 0
+
+# Presence of the work mail attribute is treated as its own filter check.
+$mailPresent = (Get-PropValues $found $WorkMailAttr).Count -gt 0
+if ($mailPresent) {
+    Write-Host ("PASS   ({0}=*)" -f $WorkMailAttr) -ForegroundColor Green
+    $passed++
+} else {
+    Write-Host ("FAIL   ({0}=*)" -f $WorkMailAttr) -ForegroundColor Red
+    $failed++
+}
 
 foreach ($clause in $clauses) {
     $testFilter = "(&$identity$clause)"
