@@ -28,3 +28,4 @@
 - [extended_save_files_to_another_disk.py](https://github.com/TAM-WD/360/blob/main/API/Disk/extended_save_files_to_another_disk.py) - перенос файлов на другой Диск с дополнительными параметрами (без сохранения публичных ссылок)
 - [delete_disk_v3.ps1](https://github.com/TAM-WD/360/blob/main/API/Disk/delete_disk_v3.ps1) - тихое удаление старой EXE-версии ПО Yandex Disk 3.x из всех локальных профилей пользователей с последующей очисткой следов установки
 - [external_share_scanner.py](https://github.com/TAM-WD/360/blob/main/API/Disk/external_share_scanner.py) - получение публичных ссылок пользователей, расшаренных вовне
+- [compare_shared_disks.py](https://github.com/TAM-WD/360/blob/main/API/Disk/compare_shared_disks.py) - сравнение файловой структуры двух Общих Дисков
