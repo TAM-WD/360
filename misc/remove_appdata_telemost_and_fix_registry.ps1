@@ -1,39 +1,43 @@
 <#
 .SYNOPSIS
-    Удаляет пер-пользовательские (per-user) установки Яндекс.Телемоста для
-    ТЕКУЩЕГО пользователя, сохраняя машинную (per-machine) установку в
-    Program Files, и чинит ассоциацию протокола telemost://, чтобы она
-    указывала на машинный клиент и бралась из HKLM.
+    Removes per-user installations of Yandex Telemost for the CURRENT user,
+    keeps the per-machine installation in Program Files, and fixes the
+    telemost:// protocol association so it points at the machine client and
+    is served from HKLM.
 
 .DESCRIPTION
-    Рассчитан на запуск В КОНТЕКСТЕ ПОЛЬЗОВАТЕЛЯ (например, GPO User
-    Configuration -> Logon Script), БЕЗ повышения прав до администратора.
-    Повышение не требуется, потому что:
-      - per-user MSI зарегистрирован в HKCU текущего пользователя, и его
-        удаление (msiexec /x) выполняется в контексте этого же пользователя;
-      - старый exe-Телемост тоже стоит в профиле пользователя и удаляется
-        его же правами;
-      - пользовательская ассоциация telemost:// живёт в
-        HKCU\Software\Classes и правится без прав администратора.
+    Intended to run IN THE USER CONTEXT (e.g. a GPO User Configuration ->
+    Logon Script), WITHOUT elevation to administrator. Elevation is not
+    required because:
+      - a per-user MSI is registered in the current user's HKCU, and its
+        removal (msiexec /x) runs in that same user's context;
+      - the legacy exe Telemost also lives in the user profile and is removed
+        with the user's own rights;
+      - the per-user telemost:// association lives in HKCU\Software\Classes
+        and is edited without administrator rights.
 
-    ЛОГИКА:
-      1. Проверяем, что машинный (per-machine) Телемост установлен в HKLM
-         (Yandex.Telemost.2.Installer :: InstallDir указывает на Program Files).
-         Если машинной установки нет — НИЧЕГО не удаляем: иначе пользователь
-         останется вообще без клиента. Просто сообщаем и выходим.
-      2. Ищем ДРУГИЕ (per-user) установки для текущего пользователя:
+    LOGIC:
+      1. Verify the per-machine Telemost is installed in HKLM
+         (Yandex.Telemost.2.Installer :: InstallDir points to Program Files).
+         If there is no machine installation - remove NOTHING: otherwise the
+         user would be left with no client at all. Just report and exit.
+      2. Look for OTHER (per-user) installations for the current user:
            - per-user MSI:  HKCU\Software\Yandex\Yandex.Telemost.2.Installer :: ProductCode
-           - старый exe:    HKCU\Software\Yandex\Yandex.Telemost.Installer   :: InstallerPath
-      3. Если найдены — удаляем их (перед удалением гасим процессы Телемоста),
-         оставляя машинный клиент в Program Files нетронутым. Заодно убираем
-         пользовательскую ассоциацию telemost:// (HKCU\Software\Classes\telemost),
-         которая могла указывать на уже удалённый per-user клиент.
-      4. Проверяем реестр: telemost:// теперь резолвится из HKLM и указывает
-         на существующий exe в Program Files (в HKCU перекрывающей записи
-         больше нет).
+           - legacy exe:    HKCU\Software\Yandex\Yandex.Telemost.Installer   :: InstallerPath
+      3. If found - remove them (stopping Telemost processes first), leaving the
+         machine client in Program Files untouched.
+      3b. Regardless of whether clients were found, remove the per-user
+          telemost:// association (HKCU\Software\Classes\telemost): it may be an
+          orphan left by a long-gone per-user client and still shadow the HKLM
+          entry.
+      4. Verify the registry: telemost:// now resolves from HKLM and points at
+         an existing exe in Program Files (no shadowing entry remains in HKCU).
 
 .NOTES
-    PowerShell 5.1+. Права администратора НЕ нужны.
+    PowerShell 5.1+. Administrator rights are NOT required.
+    This file is intentionally ASCII-only (no Cyrillic / smart punctuation) so
+    it parses correctly under Windows PowerShell 5.1 even if the UTF-8 BOM is
+    stripped during transfer.
 #>
 
 #Requires -Version 5.1
@@ -43,10 +47,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-# --- Конфигурация -----------------------------------------------------------
+# --- Configuration ----------------------------------------------------------
 
-# Машинная (per-machine) установка нового MSI-клиента. Проверяем обе ветки
-# на случай перенаправления битности (WOW6432Node).
+# Per-machine installation of the new MSI client. Check both branches in case
+# of bitness redirection (WOW6432Node).
 $MachineInstallerKeys = @(
     'HKLM:\SOFTWARE\Yandex\Yandex.Telemost.2.Installer',
     'HKLM:\SOFTWARE\WOW6432Node\Yandex\Yandex.Telemost.2.Installer'
@@ -55,27 +59,27 @@ $InstallDirValueName  = 'InstallDir'
 $ProductCodeValueName = 'ProductCode'
 $ClientExeName        = 'YandexTelemost.exe'
 
-# Пер-пользовательский MSI-клиент (HKCU).
+# Per-user MSI client (HKCU).
 $PeruserMsiKey        = 'HKCU:\Software\Yandex\Yandex.Telemost.2.Installer'
 
-# Старый exe-клиент (HKCU).
+# Legacy exe client (HKCU).
 $LegacyExeKey         = 'HKCU:\Software\Yandex\Yandex.Telemost.Installer'
 $LegacyExeValueName   = 'InstallerPath'
 $LegacyUninstallArgs  = @('-uninstallcomplete', '-silent')
 
-# Ассоциация протокола. Относительный путь одинаков в HKLM и HKCU.
+# Protocol association. The relative path is identical in HKLM and HKCU.
 $ProtocolRelKey       = 'Software\Classes\telemost'
 $ProtocolCommandRel   = "$ProtocolRelKey\shell\open\command"
 $HklmProtocolCommand  = "HKLM:\$ProtocolCommandRel"
 $HkcuProtocolRoot     = "HKCU:\$ProtocolRelKey"
 $HkcuProtocolCommand  = "HKCU:\$ProtocolCommandRel"
 
-# Процессы, которые держат файлы Телемоста и мешают удалению.
+# Processes that hold Telemost files open and block removal.
 $ProcessNames         = @('Telemost', 'Yandex.Telemost', 'YandexTelemost', 'TelemostInstaller')
 $ProcessWaitSec       = 5
 
-# --- Логирование ------------------------------------------------------------
-# Скрипт работает в контексте пользователя, поэтому пишем в его LOCALAPPDATA.
+# --- Logging ----------------------------------------------------------------
+# The script runs in the user context, so log into the user's LOCALAPPDATA.
 $LogDir  = Join-Path $env:LOCALAPPDATA 'YandexTelemostCleanup'
 $LogFile = Join-Path $LogDir 'remove_appdata_telemost.log'
 
@@ -89,7 +93,7 @@ function Write-Log {
     try { Add-Content -LiteralPath $LogFile -Value $line -Encoding UTF8 -ErrorAction Stop } catch { }
 }
 
-# Читает одно значение реестра, возвращая $null при отсутствии ключа/значения.
+# Reads a single registry value, returning $null when the key/value is absent.
 function Get-RegistryValueOrNull {
     param(
         [Parameter(Mandatory)] [string] $Path,
@@ -106,15 +110,15 @@ function Get-RegistryValueOrNull {
     }
 }
 
-# Проверяет, что строка — валидный GUID {XXXXXXXX-...}. ProductCode для MSI
-# всегда в фигурных скобках; заодно защищает от инъекции аргументов в msiexec.
+# Checks that a string is a valid GUID {XXXXXXXX-...}. An MSI ProductCode is
+# always in braces; this also guards against argument injection into msiexec.
 function Test-ProductCode {
     param([string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
     return $Value -match '^\{[0-9A-Fa-f]{8}-([0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}\}$'
 }
 
-# Достаёт путь к .exe из строки команды shell\open\command.
+# Extracts the .exe path from a shell\open\command command string.
 function Get-ExeFromCommand {
     param([string]$Command)
     if ([string]::IsNullOrWhiteSpace($Command)) { return $null }
@@ -123,39 +127,38 @@ function Get-ExeFromCommand {
     return $null
 }
 
-# Гасит процессы Телемоста текущего пользователя, чтобы освободить файлы
-# перед удалением. Работает в пользовательском контексте — трогает только
-# процессы этого пользователя.
+# Stops the current user's Telemost processes to release files before removal.
+# Runs in the user context, so only this user's processes are affected.
 function Stop-TelemostProcesses {
     $running = Get-Process -ErrorAction SilentlyContinue |
         Where-Object { $ProcessNames -contains $_.ProcessName }
     if (-not $running) {
-        Write-Log "Запущенных процессов Телемоста не найдено."
+        Write-Log "No running Telemost process found."
         return
     }
     foreach ($proc in $running) {
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction Stop
-            Write-Log "Остановлен процесс $($proc.ProcessName) (PID $($proc.Id))."
+            Write-Log "Stopped process $($proc.ProcessName) (PID $($proc.Id))."
         } catch {
-            Write-Log "Не удалось остановить $($proc.ProcessName) (PID $($proc.Id)): $($_.Exception.Message)" 'WARN'
+            Write-Log "Could not stop $($proc.ProcessName) (PID $($proc.Id)): $($_.Exception.Message)" 'WARN'
         }
     }
-    Write-Log "Ждём $ProcessWaitSec с освобождения файловых блокировок..."
+    Write-Log "Waiting $ProcessWaitSec s for file locks to release..."
     Start-Sleep -Seconds $ProcessWaitSec
 }
 
 # ============================================================================
-#  Основной поток
+#  Main flow
 # ============================================================================
 try {
     if (-not (Test-Path -LiteralPath $LogDir)) {
         New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
     }
-    Write-Log "=== Очистка per-user Телемоста для '$env:USERNAME' на '$env:COMPUTERNAME' ==="
+    Write-Log "=== Per-user Telemost cleanup for '$env:USERNAME' on '$env:COMPUTERNAME' ==="
 
-    # --- Шаг 1: машинная установка в HKLM (её оставляем) --------------------
-    Write-Log "[Шаг 1] Проверяем машинную (per-machine) установку в HKLM."
+    # --- Step 1: machine installation in HKLM (kept) -----------------------
+    Write-Log "[Step 1] Checking the per-machine installation in HKLM."
     $machineInstallDir  = $null
     $machineProductCode = $null
     foreach ($key in $MachineInstallerKeys) {
@@ -163,30 +166,30 @@ try {
         if ($dir) {
             $machineInstallDir  = $dir
             $machineProductCode = Get-RegistryValueOrNull -Path $key -Name $ProductCodeValueName
-            Write-Log "  Машинный InstallDir найден в '$key': $machineInstallDir"
+            Write-Log "  Machine InstallDir found in '$key': $machineInstallDir"
             break
         }
-        Write-Log "  Нет InstallDir в '$key'."
+        Write-Log "  No InstallDir in '$key'."
     }
 
     if (-not $machineInstallDir) {
-        Write-Log "Машинная установка Телемоста в HKLM не найдена. Чтобы не оставить" 'WARN'
-        Write-Log "пользователя без клиента, per-user установки НЕ удаляем. Выход." 'WARN'
-        Write-Log "=== Завершено (без изменений) ==="
+        Write-Log "No per-machine Telemost installation found in HKLM. To avoid leaving" 'WARN'
+        Write-Log "the user with no client, per-user installations are NOT removed. Exit." 'WARN'
+        Write-Log "=== Finished (no changes) ==="
         exit 0
     }
 
     $machineExe = Join-Path $machineInstallDir $ClientExeName
     if (Test-Path -LiteralPath $machineExe) {
-        Write-Log "  Машинный клиент на диске присутствует: $machineExe" 'OK'
+        Write-Log "  Machine client present on disk: $machineExe" 'OK'
     } else {
-        Write-Log "  ВНИМАНИЕ: машинный exe по пути '$machineExe' не найден. Реестр есть," 'WARN'
-        Write-Log "  но файла нет — удаление per-user клиентов может оставить систему без" 'WARN'
-        Write-Log "  рабочего клиента. Продолжаем, но зафиксируйте это в проверке (Шаг 4)." 'WARN'
+        Write-Log "  WARNING: machine exe not found at '$machineExe'. Registry exists," 'WARN'
+        Write-Log "  but the file does not - removing per-user clients may leave the" 'WARN'
+        Write-Log "  system without a working client. Continuing, but note it in Step 4." 'WARN'
     }
 
-    # --- Шаг 2: ищем per-user установки текущего пользователя ---------------
-    Write-Log "[Шаг 2] Ищем другие (per-user) установки Телемоста для пользователя."
+    # --- Step 2: find per-user installations for the current user ----------
+    Write-Log "[Step 2] Looking for other (per-user) Telemost installations for the user."
 
     # 2a. per-user MSI (HKCU).
     $peruserProductCode = Get-RegistryValueOrNull -Path $PeruserMsiKey -Name $ProductCodeValueName
@@ -194,145 +197,145 @@ try {
     $hasPeruserMsi      = $false
     if ($peruserProductCode) {
         if ($machineProductCode -and ($peruserProductCode -ieq $machineProductCode)) {
-            # HKCU-запись указывает на тот же продукт, что и HKLM, — это машинная
-            # регистрация, а не отдельный per-user клиент. Не трогаем.
-            Write-Log "  HKCU ProductCode совпадает с машинным ($peruserProductCode) — это"
-            Write-Log "  машинная регистрация, per-user MSI как таковой отсутствует."
+            # The HKCU entry points at the same product as HKLM - this is the
+            # machine registration, not a separate per-user client. Leave it.
+            Write-Log "  HKCU ProductCode matches the machine one ($peruserProductCode) - this"
+            Write-Log "  is the machine registration; no standalone per-user MSI is present."
         } elseif (-not (Test-ProductCode -Value $peruserProductCode)) {
-            Write-Log "  HKCU ProductCode '$peruserProductCode' не похож на GUID — пропуск." 'WARN'
+            Write-Log "  HKCU ProductCode '$peruserProductCode' does not look like a GUID - skip." 'WARN'
         } else {
             $hasPeruserMsi = $true
-            Write-Log "  Найден per-user MSI: ProductCode=$peruserProductCode InstallDir='$peruserInstallDir'."
+            Write-Log "  Found per-user MSI: ProductCode=$peruserProductCode InstallDir='$peruserInstallDir'."
         }
     } else {
-        Write-Log "  Per-user MSI (HKCU\...\Yandex.Telemost.2.Installer :: ProductCode) не найден."
+        Write-Log "  No per-user MSI (HKCU\...\Yandex.Telemost.2.Installer :: ProductCode)."
     }
 
-    # 2b. старый exe (HKCU).
+    # 2b. legacy exe (HKCU).
     $legacyExePath = Get-RegistryValueOrNull -Path $LegacyExeKey -Name $LegacyExeValueName
     $hasLegacyExe  = $false
     if ($legacyExePath) {
         if ($legacyExePath -notmatch '\.exe$') {
-            Write-Log "  Legacy InstallerPath не указывает на .exe ('$legacyExePath') — пропуск." 'WARN'
+            Write-Log "  Legacy InstallerPath does not point to a .exe ('$legacyExePath') - skip." 'WARN'
         } elseif (-not (Test-Path -LiteralPath $legacyExePath)) {
-            Write-Log "  Legacy exe в реестре есть, но файла на диске нет ('$legacyExePath')." 'WARN'
-            Write-Log "  Удаление запускать нечем; почистим только запись ассоциации на Шаге 3."
+            Write-Log "  Legacy exe is in the registry but the file is missing ('$legacyExePath')." 'WARN'
+            Write-Log "  Nothing to run for removal; only the association will be cleaned in Step 3b."
         } else {
             $hasLegacyExe = $true
-            Write-Log "  Найден старый exe-клиент: $legacyExePath"
+            Write-Log "  Found legacy exe client: $legacyExePath"
         }
     } else {
-        Write-Log "  Старый exe-клиент (HKCU\...\Yandex.Telemost.Installer :: InstallerPath) не найден."
+        Write-Log "  No legacy exe client (HKCU\...\Yandex.Telemost.Installer :: InstallerPath)."
     }
 
-    # --- Шаг 3: удаляем найденные per-user клиенты --------------------------
+    # --- Step 3: remove the found per-user clients -------------------------
     if (-not $hasPeruserMsi -and -not $hasLegacyExe) {
-        Write-Log "[Шаг 3] Per-user клиентов для удаления не найдено."
+        Write-Log "[Step 3] No per-user clients to remove."
     } else {
-        Write-Log "[Шаг 3] Удаляем per-user клиенты (машинный в Program Files сохраняем)."
+        Write-Log "[Step 3] Removing per-user clients (the machine one in Program Files is kept)."
         Stop-TelemostProcesses
 
         if ($hasPeruserMsi) {
-            Write-Log "  Удаляем per-user MSI: msiexec /x `"$peruserProductCode`" /qn /norestart"
+            Write-Log "  Removing per-user MSI: msiexec /x `"$peruserProductCode`" /qn /norestart"
             try {
                 $p = Start-Process msiexec.exe `
                         -ArgumentList '/x', $peruserProductCode, '/qn', '/norestart' `
                         -Wait -PassThru
                 switch ($p.ExitCode) {
-                    0       { Write-Log "  per-user MSI удалён успешно (0)." 'OK' }
-                    1605    { Write-Log "  продукт уже не установлен (1605) — пропуск." }
-                    3010    { Write-Log "  удалён, требуется перезагрузка (3010)." 'OK' }
-                    default { Write-Log "  msiexec вернул код $($p.ExitCode)." 'WARN' }
+                    0       { Write-Log "  per-user MSI removed successfully (0)." 'OK' }
+                    1605    { Write-Log "  product is already not installed (1605) - skip." }
+                    3010    { Write-Log "  removed, reboot required (3010)." 'OK' }
+                    default { Write-Log "  msiexec returned code $($p.ExitCode)." 'WARN' }
                 }
             } catch {
-                Write-Log "  Ошибка запуска msiexec: $($_.Exception.Message)" 'ERROR'
+                Write-Log "  Failed to launch msiexec: $($_.Exception.Message)" 'ERROR'
             }
         }
 
         if ($hasLegacyExe) {
-            Write-Log "  Удаляем старый exe: `"$legacyExePath`" $($LegacyUninstallArgs -join ' ')"
+            Write-Log "  Removing legacy exe: `"$legacyExePath`" $($LegacyUninstallArgs -join ' ')"
             try {
                 $p = Start-Process -FilePath $legacyExePath -ArgumentList $LegacyUninstallArgs -Wait -PassThru
                 if ($p.ExitCode -eq 0) {
-                    Write-Log "  старый exe удалён успешно (0)." 'OK'
+                    Write-Log "  legacy exe removed successfully (0)." 'OK'
                 } else {
-                    Write-Log "  деинсталлятор вернул код $($p.ExitCode)." 'WARN'
+                    Write-Log "  uninstaller returned code $($p.ExitCode)." 'WARN'
                 }
             } catch {
-                Write-Log "  Ошибка запуска деинсталлятора: $($_.Exception.Message)" 'ERROR'
+                Write-Log "  Failed to launch the uninstaller: $($_.Exception.Message)" 'ERROR'
             }
         }
     }
 
-    # Убираем пользовательскую ассоциацию telemost:// НЕЗАВИСИМО от того, нашлись
-    # ли клиенты: запись в HKCU\Software\Classes\telemost может остаться
-    # осиротевшей от давно удалённого per-user клиента и всё равно перекрывать
-    # машинную запись из HKLM. Раз машинная установка (Шаг 1) точно есть,
-    # пользователю после чистки будет на что упасть через HKLM.
-    Write-Log "[Шаг 3b] Чистим пользовательскую ассоциацию telemost:// (HKCU), если она есть."
+    # Remove the per-user telemost:// association REGARDLESS of whether clients
+    # were found: the HKCU\Software\Classes\telemost entry may be an orphan left
+    # by a long-gone per-user client and still shadow the HKLM entry. Since the
+    # machine installation (Step 1) is definitely present, after cleanup the
+    # user has a working fallback via HKLM.
+    Write-Log "[Step 3b] Cleaning the per-user telemost:// association (HKCU), if any."
     if (Test-Path -LiteralPath $HkcuProtocolRoot) {
         try {
             Remove-Item -LiteralPath $HkcuProtocolRoot -Recurse -Force -ErrorAction Stop
-            Write-Log "  Удалена пользовательская ассоциация '$HkcuProtocolRoot'." 'OK'
+            Write-Log "  Removed the per-user association '$HkcuProtocolRoot'." 'OK'
         } catch {
-            Write-Log "  Не удалось удалить '$HkcuProtocolRoot': $($_.Exception.Message)" 'ERROR'
+            Write-Log "  Could not remove '$HkcuProtocolRoot': $($_.Exception.Message)" 'ERROR'
         }
     } else {
-        Write-Log "  Пользовательской ассоциации '$HkcuProtocolRoot' нет — чистить нечего."
+        Write-Log "  No per-user association '$HkcuProtocolRoot' - nothing to clean."
     }
 
-    # --- Шаг 4: проверяем ассоциацию telemost:// ----------------------------
-    Write-Log "[Шаг 4] Проверяем, что telemost:// берётся из HKLM и указывает на"
-    Write-Log "         существующий клиент в Program Files."
+    # --- Step 4: verify the telemost:// association ------------------------
+    Write-Log "[Step 4] Verifying telemost:// is served from HKLM and points at an"
+    Write-Log "         existing client in Program Files."
     $ok = $true
 
-    # 4a. В HKCU не должно остаться перекрывающей записи.
+    # 4a. No shadowing entry must remain in HKCU.
     if (Test-Path -LiteralPath $HkcuProtocolCommand) {
         $hkcuCmd = Get-RegistryValueOrNull -Path $HkcuProtocolCommand -Name '(default)'
-        Write-Log "  HKCU всё ещё содержит ассоциацию telemost:// -> $hkcuCmd" 'WARN'
-        Write-Log "  Пока она есть, для пользователя приоритет у неё, а не у HKLM." 'WARN'
+        Write-Log "  HKCU still holds a telemost:// association -> $hkcuCmd" 'WARN'
+        Write-Log "  While it exists, it takes priority over HKLM for this user." 'WARN'
         $ok = $false
     } else {
-        Write-Log "  В HKCU перекрывающей записи telemost:// нет — приоритет у HKLM." 'OK'
+        Write-Log "  No shadowing telemost:// entry in HKCU - HKLM takes priority." 'OK'
     }
 
-    # 4b. В HKLM запись должна существовать.
+    # 4b. The HKLM entry must exist.
     if (-not (Test-Path -LiteralPath $HklmProtocolCommand)) {
-        Write-Log "  В HKLM нет '$ProtocolCommandRel' — машинная ассоциация отсутствует." 'ERROR'
+        Write-Log "  HKLM has no '$ProtocolCommandRel' - the machine association is missing." 'ERROR'
         $ok = $false
     } else {
         $hklmCmd = Get-RegistryValueOrNull -Path $HklmProtocolCommand -Name '(default)'
-        Write-Log "  HKLM ассоциация telemost:// -> $hklmCmd"
+        Write-Log "  HKLM telemost:// association -> $hklmCmd"
         $hklmExe = Get-ExeFromCommand -Command $hklmCmd
 
         if (-not $hklmExe) {
-            Write-Log "  Не удалось извлечь путь к .exe из команды HKLM." 'ERROR'
+            Write-Log "  Could not extract the .exe path from the HKLM command." 'ERROR'
             $ok = $false
         } elseif (-not (Test-Path -LiteralPath $hklmExe)) {
-            Write-Log "  Клиент из HKLM не найден на диске: $hklmExe" 'ERROR'
+            Write-Log "  The HKLM client is not present on disk: $hklmExe" 'ERROR'
             $ok = $false
         } else {
-            Write-Log "  Клиент из HKLM существует: $hklmExe" 'OK'
-            # 4c. И это должен быть машинный клиент из Program Files (совпадает с InstallDir из HKLM).
+            Write-Log "  The HKLM client exists: $hklmExe" 'OK'
+            # 4c. And it must be the machine client from Program Files (matching HKLM InstallDir).
             $expectedExe = Join-Path $machineInstallDir $ClientExeName
             if ($hklmExe -ieq $expectedExe) {
-                Write-Log "  Путь совпадает с машинным InstallDir из HKLM — ассоциация корректна." 'OK'
+                Write-Log "  Path matches the machine InstallDir from HKLM - association is correct." 'OK'
             } else {
-                Write-Log "  ВНИМАНИЕ: HKLM-команда ('$hklmExe') не совпадает с ожидаемым" 'WARN'
-                Write-Log "  машинным путём ('$expectedExe'). Проверьте вручную." 'WARN'
+                Write-Log "  WARNING: the HKLM command ('$hklmExe') does not match the expected" 'WARN'
+                Write-Log "  machine path ('$expectedExe'). Check manually." 'WARN'
             }
         }
     }
 
     if ($ok) {
-        Write-Log "=== Готово: per-user клиенты убраны, telemost:// резолвится из HKLM в Program Files ==="
+        Write-Log "=== Done: per-user clients cleared, telemost:// resolves from HKLM to Program Files ==="
         exit 0
     } else {
-        Write-Log "=== Завершено с замечаниями по ассоциации (см. WARN/ERROR выше) ===" 'WARN'
+        Write-Log "=== Finished with association warnings (see WARN/ERROR above) ===" 'WARN'
         exit 1
     }
 } catch {
-    Write-Log "Необработанная ошибка: $($_.Exception.Message)" 'ERROR'
+    Write-Log "Unhandled error: $($_.Exception.Message)" 'ERROR'
     if ($_.InvocationInfo) { Write-Log $_.InvocationInfo.PositionMessage 'ERROR' }
     exit 1
 }
