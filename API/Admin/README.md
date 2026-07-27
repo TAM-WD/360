@@ -11,3 +11,4 @@
 - [write_name_and_department_into_xlsx.py](https://github.com/TAM-WD/360/blob/main/API/Admin/write_name_and_department_into_xlsx.py) — добавить в xlsx ФИО и подразделение по email пользователя.
 - [2fa_manager](https://github.com/TAM-WD/360/blob/main/API/Admin/2fa_manager.py) - включение и выключения 2fa пользователей организации.
 - [groups permisson and members.py](https://github.com/TAM-WD/360/blob/main/API/Admin/groups%20permisson%20and%20members.py) - выгрузка информации по группам, их наполнению и доступом написания на эти группы
+- [group-sync.py](https://github.com/TAM-WD/360/blob/main/API/Admin/group-sync.py) - создание групп рассылок и контроль количества сотрудников в них, чтобы группы не превышали 10000 человек
