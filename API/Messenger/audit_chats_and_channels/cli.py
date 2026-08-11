@@ -982,6 +982,9 @@ def cmd_selftest() -> None:
         compare_dir = os.path.join(results_dir, COMPARE_DIR, "selftest")
         export_compare(compare_dir, cmp_result)
         assert os.path.isfile(os.path.join(compare_dir, "members_delta.csv"))
+        # проверяем и вывод в консоль: раньше ошибка в нём находилась только
+        # на реальном втором прогоне
+        print_compare(cmp_result, compare_dir)
         print(f"[ок] сравнение запусков работает: {cmp_result.counts()}")
 
         # 22. предупреждение о разных условиях запуска
@@ -995,7 +998,9 @@ def cmd_selftest() -> None:
         warned = compare_runs(run_b, run_c)
         assert any("разных режимах" in item for item in warned.warnings), \
             warned.warnings
+        print_compare(warned, None)
         print("[ок] о несовпадении условий запуска предупреждаем")
+
 
         # 23. чистка старых запусков
         removed_runs = prune_runs(results_dir, keep=2, command="analyze")
