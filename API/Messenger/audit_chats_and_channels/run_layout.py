@@ -61,8 +61,12 @@ def create_run_dir(results_dir: str, command: str = "analyze",
     run_id = make_run_id(command, tag, now)
     path = os.path.join(results_dir, run_id)
     suffix = 1
-    while os.path.exists(path):              # два прогона в одну секунду
-        path = os.path.join(results_dir, f"{run_id}-{suffix}")
+    while os.path.exists(path):
+        # счётчик кладём в метку, иначе название не подойдёт под RUN_DIR_RE
+        # и папка станет невидимой для команд runs и compare
+        collision_tag = f"{tag}-{suffix}" if tag else str(suffix)
+        run_id = make_run_id(command, collision_tag, now)
+        path = os.path.join(results_dir, run_id)
         suffix += 1
     os.makedirs(path)
     run = RunInfo(run_id=os.path.basename(path), path=path, command=command,
@@ -240,3 +244,4 @@ def prune_runs(results_dir: str, keep: int, command: str = "analyze") -> list[st
     if removed:
         log.info("Удалено старых прогонов: %s", len(removed))
     return removed
+
