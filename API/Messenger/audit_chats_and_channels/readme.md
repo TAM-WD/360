@@ -53,8 +53,10 @@
 ## Установка
 
 ```bash
-git clone <адрес репозитория>
-cd msgaudit
+git clone --filter=blob:none --sparse https://github.com/TAM-WD/360.git
+cd 360
+git sparse-checkout set API/Messenger/audit_chats_and_channels
+cd API/Messenger/audit_chats_and_channels
 
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
