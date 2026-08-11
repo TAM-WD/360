@@ -5,8 +5,9 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
+from datetime import datetime
 
-from run_layout import RunInfo
+from run_layout import RUN_DIR_RE, RunInfo
 
 log = logging.getLogger("compare")
 
@@ -284,15 +285,19 @@ def print_compare(result: CompareResult, out_dir: str | None = None) -> None:
     from human import (chat_type_short_ru, dt_human, plural, role_ru)
 
     def _run_time(run_id: str) -> str:
-        parts = run_id.split("-")
-        if len(parts) >= 3:
-            try:
-                moment = datetime.strptime(f"{parts[1]}{parts[2].rstrip('Z')}",
-                                           "%Y%m%d%H%M%S")
-                return moment.strftime("%d.%m.%Y %H:%M")
-            except ValueError:
-                pass
-        return run_id
+        """Достаёт дату, время и метку из названия папки запуска."""
+        match = RUN_DIR_RE.match(run_id)
+        if not match:
+            return run_id
+        try:
+            moment = datetime.strptime(f"{match.group(2)}{match.group(3)}",
+                                       "%Y%m%d%H%M%S")
+        except ValueError:
+            return run_id
+        text = moment.strftime("%d.%m.%Y %H:%M")
+        tag = match.group(4)
+        return f"{text}, метка «{tag}»" if tag else text
+
 
     print("\n" + "=" * 68)
     print("ЧТО ИЗМЕНИЛОСЬ")
