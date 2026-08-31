@@ -6,3 +6,4 @@
 - [delete_links_multithreading.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/delete_links_multithreading.py) - удаление связей задач по списку из консоли браузера
 - [get_fields_with_filter.py](https://github.com/TAM-WD/360/blob/main/API/Tracker/get_fields_with_filter.py) - выгрузка глобальных и локальных полей в csv с фильтром
 - [Export Tracker.zip](https://github.com/TAM-WD/360/blob/main/API/Tracker/Export%20Tracker.zip) - Экспорт задач из очереди Трекера одной организации и импорту этих задач в другую организацию
+- [tracker_queue_grant](https://github.com/TAM-WD/360/tree/main/API/Tracker/tracker_queue_grant) - Добавление учетной записи в доступ на просмотр до каждой очереди Трекера организации
