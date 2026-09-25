@@ -7,3 +7,4 @@
 - [remove_telemost_cu.ps1](https://github.com/TAM-WD/360/blob/main/misc/remove_telemost_cu.ps1) — удалить ассоциации telemost:// у пользователей (запуск через GPO*)
 - [remove_yandex_messenger.ps1](https://github.com/TAM-WD/360/blob/main/misc/remove_yandex_messenger.ps1) — удалить Мессенджер (exe, user-msi, machine-msi) с ПК пользователей (GPO*)
 *рекомендуется проверить работу скрипта на тестовой выборке машин перед массовым запуском.
+- [disk-search-download-windows](https://github.com/TAM-WD/360/blob/main/misc/disk-search-download-windows.zip) — Windows-приложение с локальным веб-интерфейсом для поиска и скачивания файлов с Дисков сотрудников Яндекс 360
