@@ -1,26 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Chat Downloader",
-  "version": "1.3",
-  "description": "Выгрузка личных, групповых чатов и чатов трансляций Яндекс Мессенджера и Телемоста в Excel",
+  "version": "1.0",
+  "description": "Выгрузка чатов трансляций через Мессенджер",
   "permissions": [
     "activeTab",
-    "scripting",
-    "webNavigation"
-  ],
-  "optional_host_permissions": [
-    "https://telemost.yandex.ru/*",
-    "https://telemost.360.yandex.ru/*",
-    "https://messenger.yandex.ru/*",
-    "https://messenger.360.yandex.ru/*",
-    "https://telemost.yandex.com/*",
-    "https://telemost.360.yandex.com/*",
-    "https://messenger.yandex.com/*",
-    "https://messenger.360.yandex.com/*",
-    "https://messenger.yandex-team.ru/*",
-    "https://telemost.yandex-team.ru/*",
-    "https://yandex.ru/*",
-    "https://yandex.com/*"
+    "scripting"
   ],
   "action": {
     "default_popup": "popup.html",
