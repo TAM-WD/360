@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>Chat Downloader</title>
   <style>
     * {
       margin: 0;
@@ -10,7 +11,8 @@
     }
 
     body {
-      width: 380px;
+      min-width: 380px;
+      width: 100%;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -264,18 +266,19 @@
     <div class="header">
       <div class="header-icon">C</div>
       <h1>Chat Downloader</h1>
-      <div class="subtitle">Выгрузка чатов трансляций через Мессенджер</div>
+      <div class="subtitle"><span id="version"></span></div>
     </div>
 
     <div class="content">
       <div class="warning-box" id="warningBox" style="display: none;">
         <ul class="warning-list">
           <li>Не закрывайте вкладку с чатом</li>
-          <li>Не сворачивайте окно расширения</li>
+          <li>Дождитесь завершения в отдельном окне выгрузки</li>
+          <li>Открытая переписка сохраняется в Excel</li>
         </ul>
       </div>
 
-      <div id="status"></div>
+      <div id="status" role="status" aria-live="polite"></div>
 
       <button id="exportBtn">Начать новую выгрузку</button>
             
@@ -283,12 +286,20 @@
         <div class="stats-container">
           <div class="stats-title">Статистика экспорта</div>
           <div class="stat-item">
-            <span class="stat-label">❓ Вопросов</span>
+            <span class="stat-label">Всего сообщений</span>
+            <span class="stat-value" id="messagesCount">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Сообщений без цитаты</span>
             <span class="stat-value" id="questionsCount">0</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">💬 Ответов</span>
             <span class="stat-value" id="answersCount">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Вложений</span>
+            <span class="stat-value" id="attachmentsCount">0</span>
           </div>
         </div>
       </div>
@@ -296,6 +307,7 @@
   </div>
 
   <script src="libs/xlsx.full.min.js"></script>
+  <script src="export-model.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
