@@ -5,6 +5,7 @@
 - [disk_resource_id_duplicates.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_resource_id_duplicates.py) - поиск дубликатов resource_id в Диске.
 - [disk_space_of_shared.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_shared.py) - получение занятого/свободного места на Общих Дисках организации.
 - [disk_space_of_users.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_users.py) - получение занятого/свободного места на Дисках у сотрудников организации при использовании SSO.
+- [disk_space_of_users-no_sso.py](https://github.com/TAM-WD/360/blob/main/API/Disk/disk_space_of_users-no_sso.py) - получение занятого/свободного места на Дисках у сотрудников организации без SSO.
 - [get_groups_accesses_for_links-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_groups_accesses_for_links-for_share.py) - получение групповых доступов к ссылкам по списку uid.
 - [get_old_shared_folders.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_old_shared_folders.py) - получить старые общие папки на дисках пользователей и найти пользователей, которые что-то в них делали.
 - [get_shared_ress_of_user-for_share.py](https://github.com/TAM-WD/360/blob/main/API/Disk/get_shared_ress_of_user-for_share.py) - получение списка публичных ссылок одного пользователя.
