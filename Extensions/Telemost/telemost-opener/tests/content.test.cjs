@@ -46,10 +46,14 @@ function setup() {
 }
 
 for (const [route, url, expected] of [
+  ['Messenger join', 'https://messenger.360.yandex.ru/#/join/other%2Fcode?selectedUid=456&from=auto_redirect_ms',
+    'telemost://ychat/telemost.360.yandex.ru/join#other%2Fcode'],
+  ['Messenger staff', 'https://messenger.360.yandex.ru/#/staff/person%40example.net?selectedUid=456&from=auto_redirect_ms',
+    'telemost://ychat/telemost.yandex.ru/staff/person%40example.net'],
   ['staff legacy domain', 'https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test',
-    'telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test'],
+    'telemost://ychat/telemost.yandex.ru/staff/person@example.net#test'],
   ['staff', 'https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test',
-    'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test'],
+    'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net#test'],
   ['j legacy domain', 'https://telemost.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room',
     'telemost://https://telemost.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room'],
   ['j', 'https://telemost.360.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room',
@@ -64,7 +68,7 @@ for (const [route, url, expected] of [
     ['Shift', { shiftKey: true }], ['middle', { type: 'auxclick', button: 1 }],
     ['keyboard', { detail: 0 }], ['image map', { tag: 'area' }]
   ]) {
-    test(`${route}: ${name} cancels the web navigation and preserves the query/fragment`, () => {
+    test(`${route}: ${name} cancels web navigation and applies the configured URL mapping`, () => {
       const { activate, launches } = setup();
       const event = activate(url, props);
       assert.equal(event.prevented, true);

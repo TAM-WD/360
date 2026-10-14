@@ -64,15 +64,15 @@
         "pathname": "/staff/{tail}",
         "hashRequired": false
       },
-      "target": "telemost://ychat/{urlNoScheme}",
+      "target": "telemost://ychat/{host}{pathname}{hash}",
       "examples": [
         {
-          "url": "https://telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms",
-          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms"
+          "url": "https://telemost.yandex.ru/staff/person@example.net",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person@example.net"
         },
         {
-          "url": "https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms",
-          "appUrl": "telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms"
+          "url": "https://telemost.360.yandex.ru/staff/person@example.net",
+          "appUrl": "telemost://ychat/telemost.360.yandex.ru/staff/person@example.net"
         }
       ]
     },
@@ -89,15 +89,41 @@
         "hashPathname": "/staff/{tail}",
         "hashRequired": true
       },
-      "target": "telemost://ychat/telemost.yandex.ru{hashPathAndQuery}",
+      "target": "telemost://ychat/telemost.yandex.ru{hashPathname}",
       "examples": [
         {
           "url": "https://messenger.360.yandex.ru/#/staff/example-user",
           "appUrl": "telemost://ychat/telemost.yandex.ru/staff/example-user"
         },
         {
-          "url": "https://messenger.360.yandex.ru/#/staff/person%40example.net?selectedUid=123456789&from=auto_redirect_ms",
-          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person%40example.net?selectedUid=123456789&from=auto_redirect_ms"
+          "url": "https://messenger.360.yandex.ru/#/staff/person%40example.net",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person%40example.net"
+        }
+      ]
+    },
+    {
+      "id": "messenger-join",
+      "name": "Мессенджер: чаты в Телемост",
+      "enabled": true,
+      "userToggleAllowed": true,
+      "match": {
+        "origins": [
+          "https://messenger.360.yandex.ru"
+        ],
+        "pathname": "/",
+        "hashRequired": true,
+        "queryKeys": [],
+        "hashPathname": "/join/{p1}"
+      },
+      "target": "telemost://ychat/telemost.360.yandex.ru/join#{hashPath:1}",
+      "examples": [
+        {
+          "url": "https://messenger.360.yandex.ru/#/join/a1b2c3",
+          "appUrl": "telemost://ychat/telemost.360.yandex.ru/join#a1b2c3"
+        },
+        {
+          "url": "https://messenger.360.yandex.ru/#/join/d4e5f6",
+          "appUrl": "telemost://ychat/telemost.360.yandex.ru/join#d4e5f6"
         }
       ]
     }

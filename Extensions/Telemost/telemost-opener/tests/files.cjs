@@ -74,7 +74,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const bundled = await download('#export-rules','rules.json');
     const personal = await download('#export-user-rules','user-rules.json');
     assert.equal(settings.rules,undefined);assert.equal(settings.enabled['telemost-j'],false);
-    assert.equal(bundled.rules.length,4);assert.equal(bundled.allowUserChanges,undefined);
+    assert.equal(bundled.rules.length,5);assert.equal(bundled.allowUserChanges,undefined);
     assert.deepEqual(personal,await readFile());
     pass('three download buttons produce separate settings, bundled rules and personal rules files');
     const before = await readFile();

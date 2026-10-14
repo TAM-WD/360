@@ -73,8 +73,10 @@ async function main() {
       await cdp.detach().catch(() => {});
     }
     const cases = [
-      ['https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms'],
-      ['https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms'],
+      ['https://messenger.360.yandex.ru/#/join/other%2Fcode?selectedUid=456&from=auto_redirect_ms', 'telemost://ychat/telemost.360.yandex.ru/join#other%2Fcode'],
+      ['https://messenger.360.yandex.ru/#/staff/person%40example.net?selectedUid=456&from=auto_redirect_ms', 'telemost://ychat/telemost.yandex.ru/staff/person%40example.net'],
+      ['https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.yandex.ru/staff/person@example.net'],
+      ['https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net'],
       ['https://telemost.yandex.ru/j/123?from=test#room', 'telemost://https://telemost.yandex.ru/j/123?from=test#room'],
       ['https://telemost.360.yandex.ru/j/123?from=test#room', 'telemost://https://telemost.360.yandex.ru/j/123?from=test#room'],
       ['https://telemost.yandex.ru/join#room%2F123?token=A%2BB', 'telemost://ychat/telemost.yandex.ru/join#room%2F123?token=A%2BB'],

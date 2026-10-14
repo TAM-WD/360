@@ -99,7 +99,7 @@ async function until(check, label) {
     pass('other hash-route sections remain outside the rule');
     await options.locator('#save-rule').click();
     await until(async () => await worker.evaluate(id => ConfigService.snapshot.config.rules.find(r => r.id === id)?.match.hashPathname === '/staff/{tail}', oldRule.id), 'updated rule saved');
-    assert.equal(await options.locator('#rules .rule').count(), 4);
+    assert.equal(await options.locator('#rules .rule').count(), config.rules.length + 1);
     await options.locator(`[data-rule-id="${oldRule.id}"]`).check();
     await until(async () => await worker.evaluate(url => ConfigService.toAppUrl(url), web('lyxm2')) === app('lyxm2'), 'rule enabled');
     const source = context.pages()[0];

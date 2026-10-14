@@ -79,8 +79,15 @@ RedirectSettings.ready.then(() => {
       await check(`staff click on ${host}`, async () => {
         await page.locator('#regular').evaluate((a, url) => a.href = url, url);
         await page.locator('#regular').click();
-      }, url, null, `telemost://ychat/${url.slice(8)}`);
+      }, url, null, `telemost://ychat/${host}/staff/person@example.net`);
     }
+    for (const [url, appUrl] of [
+      ['https://messenger.360.yandex.ru/#/join/other%2Fcode?selectedUid=456&from=auto_redirect_ms', 'telemost://ychat/telemost.360.yandex.ru/join#other%2Fcode'],
+      ['https://messenger.360.yandex.ru/#/staff/person%40example.net?selectedUid=456&from=auto_redirect_ms', 'telemost://ychat/telemost.yandex.ru/staff/person%40example.net']
+    ]) await check(`Messenger click: ${url}`, async () => {
+      await page.locator('#regular').evaluate((a, value) => a.href = value, url);
+      await page.locator('#regular').click();
+    }, url, null, appUrl);
     const plain = 'https://telemost.360.yandex.ru/j/123456789';
     const blank = 'https://telemost.360.yandex.ru/j/987654321?source=test#room';
     await check('ordinary click', () => page.locator('#regular').click(), plain);

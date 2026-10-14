@@ -53,16 +53,16 @@ async function until(check, label) {
     const setup=await prepare('editable');
     let {worker,id,options}=await launch(setup);
     const errors=[];context.on('weberror',e=>errors.push(e.error().message));
-    for(const id of ['telemost-j','telemost-join','telemost-staff','messenger-staff']) assert.equal(await options.locator(`[data-rule-id="${id}"]`).isChecked(),true);
-    pass('all four route switches start enabled');
+    for(const id of ['telemost-j','telemost-join','telemost-staff','messenger-staff','messenger-join']) assert.equal(await options.locator(`[data-rule-id="${id}"]`).isChecked(),true);
+    pass('all five route switches start enabled');
     const source=context.pages()[0];await source.goto('https://source.example/');
     for(const host of ['telemost.yandex.ru','telemost.360.yandex.ru']) {
       const url=`https://${host}/staff/person@example.net?selectedUid=123&from=auto_redirect_ms`;
       await source.locator('#link').evaluate((a,url)=>{a.href=url;delete document.documentElement.dataset.launch;},url);
       await source.locator('#link').click();
-      await until(async()=>await source.locator('html').getAttribute('data-launch')===`telemost://ychat/${url.slice(8)}`,'staff click');
+      await until(async()=>await source.locator('html').getAttribute('data-launch')===`telemost://ychat/${host}/staff/person@example.net`,'staff click');
       assert.equal(source.url(),'https://source.example/');
-      pass(`staff click forwards full URL on ${host}`);
+      pass(`staff click drops query parameters on ${host}`);
     }
     await options.locator('[data-rule-id="telemost-j"]').uncheck();
     await until(async()=>await worker.evaluate(()=>!ConfigService.snapshot.config.rules[0].enabled),'j disabled');
@@ -88,7 +88,7 @@ async function until(check, label) {
     assert.equal(await options.locator('#preview').textContent(),'exampleapp://join?id=987&password=c%2Fd');
     if(process.env.SCREENSHOT_PATH) await options.screenshot({path:process.env.SCREENSHOT_PATH,fullPage:true});
     await options.locator('#save-rule').click();
-    await until(async()=>await options.locator('#rules .rule').count()===5,'custom saved');
+    await until(async()=>await options.locator('#rules .rule').count()===6,'custom saved');
     const customId=await worker.evaluate(()=>ConfigService.snapshot.config.rules.find(r=>r.id.startsWith('custom-')).id);
     pass('two inputs produce a reusable rule and preview a new identifier');
     await source.locator('#link').evaluate(a=>{a.href='https://meet.example/room/555?pwd=k%2Bl';delete document.documentElement.dataset.launch;});
@@ -107,14 +107,14 @@ async function until(check, label) {
     assert.equal(exported.rules.length,1);assert.equal(exported.rules.at(-1).examples[0].appUrl,'exampleapp://join?id=123456&password=a1b2c3');
     pass('user-rules.json export contains only personal rules and synthetic examples');
     await options.locator('#rules .rule').filter({hasText:'Example app'}).getByRole('button',{name:'Удалить'}).click();
-    await until(async()=>await options.locator('#rules .rule').count()===4,'delete');
+    await until(async()=>await options.locator('#rules .rule').count()===5,'delete');
     await options.getByText('Импортировать JSON',{exact:true}).click();
     await options.locator('#import-json').fill(JSON.stringify(exported));await options.locator('#import-config').click();
-    await until(async()=>await options.locator('#rules .rule').count()===5,'import');
+    await until(async()=>await options.locator('#rules .rule').count()===6,'import');
     pass('exported JSON restores a deleted rule');
     await options.locator('#import-json').fill('{ invalid');await options.locator('#import-config').click();
     await until(async()=>await options.locator('#status').getAttribute('class').then(v=>v.includes('error')),'invalid json shown');
-    assert.equal(await options.locator('#rules .rule').count(),5);
+    assert.equal(await options.locator('#rules .rule').count(),6);
     pass('invalid JSON does not overwrite saved rules');
     assert.deepEqual(errors,[]);
     await context.close();context=null;

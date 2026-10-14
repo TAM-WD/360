@@ -89,7 +89,7 @@ async function main() {
         assert.equal(sourceLoads, 1, 'redirect source must never reload');
         assert.equal(helperCommits, 1, 'helper must not flash/reload in a loop');
         assert.equal(page.url(), helper, 'native prompt host must stay stable');
-        assert.equal(await worker.evaluate(() => globalThis.launches.at(-1).appUrl), `telemost://ychat/${target.slice(8)}`);
+        assert.equal(await worker.evaluate(() => globalThis.launches.at(-1).appUrl), `telemost://ychat/${domain}/staff/person@example.net`);
         assert.equal(context.pages().length, 1);
         checks++;
         console.log(`PASS one launch, no reload loop: ${domain}, ${method}, ${ms} ms, from=${fromParam}`);

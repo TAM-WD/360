@@ -11,9 +11,9 @@ const { TelemostRouter: R, RuleInference: I, ConfigCore: C } = ctx;
 const base = require('./fixtures.cjs').base;
 const copy = value => JSON.parse(JSON.stringify(value));
 const map = (url, config = base) => R.toAppUrl(url, undefined, config);
-test('JSON contains four enabled built-in rules, two examples each', () => {
+test('JSON contains five enabled built-in rules, two examples each', () => {
   const validated = R.validateConfig(base);
-  assert.equal(validated.rules.length, 4);
+  assert.equal(validated.rules.length, 5);
   for (const rule of validated.rules) {
     assert.equal(rule.enabled, true); assert.equal(rule.examples.length, 2);
     for (const pair of rule.examples) assert.equal(map(pair.url), pair.appUrl);
@@ -159,4 +159,17 @@ test('exact rules remain exact until explicitly re-analyzed; new templates survi
   assert.equal(imported.rules.length,1);
   assert.equal(imported.rules[0].id,original.id);
   assert.equal(map('https://messenger.360.yandex.ru/#/staff/lyxm2',C.resolve(base,imported).config),'telemost://ychat/telemost.yandex.ru/staff/lyxm2');
+});
+
+for (const host of ['telemost.yandex.ru', 'telemost.360.yandex.ru']) test(`built-in staff drops query on ${host} while preserving path and fragment`, () => {
+  assert.equal(map(`https://${host}/staff/user%40example.net?selectedUid=456&from=auto_redirect_ms#card`), `telemost://ychat/${host}/staff/user%40example.net#card`);
+});
+test('built-in Messenger staff drops outer and fragment query parameters', () => {
+  assert.equal(map('https://messenger.360.yandex.ru/?selectedUid=123#/staff/user%40example.net?selectedUid=456&from=auto_redirect_ms'), 'telemost://ychat/telemost.yandex.ru/staff/user%40example.net');
+});
+test('built-in Messenger join substitutes another encoded code and excludes query parameters', () => {
+  assert.equal(map('https://messenger.360.yandex.ru/?from=outer#/join/other%2Fcode?selectedUid=456&from=auto_redirect_ms'), 'telemost://ychat/telemost.360.yandex.ru/join#other%2Fcode');
+});
+test('built-in Messenger join rejects empty codes, extra segments and unrelated origins or paths', () => {
+  for (const url of ['https://messenger.360.yandex.ru/#/join/', 'https://messenger.360.yandex.ru/#/join', 'https://messenger.360.yandex.ru/#/join/code/extra', 'https://messenger.360.yandex.ru/#/joined/code', 'https://messenger.360.yandex.ru/other#/join/code', 'http://messenger.360.yandex.ru/#/join/code', 'https://messenger.360.yandex.ru.evil.example/#/join/code']) assert.equal(map(url), null, url);
 });

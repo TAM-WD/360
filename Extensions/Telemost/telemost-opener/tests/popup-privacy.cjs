@@ -54,7 +54,7 @@ const assert = require('node:assert/strict');
     assert.ok(metrics.height<450, JSON.stringify(metrics));
     await popup.setViewportSize({width:370,height:Math.ceil(metrics.height)});
     if (process.env.SCREENSHOT_PATH) await popup.screenshot({path:process.env.SCREENSHOT_PATH});
-    console.log('PASS compact popup, six rules, renamed labels, no template text; gap='+metrics.gap+'px, height='+metrics.height+'px');
+    console.log('PASS compact popup, seven rules, renamed labels, no template text; gap='+metrics.gap+'px, height='+metrics.height+'px');
     await options.locator('#source-url').fill('https://unique.example/secret-room');
     await options.locator('#app-url').fill('someapp://fixed-home');
     await options.locator('#analyze').click();
