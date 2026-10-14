@@ -27,7 +27,7 @@ https://telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&from=a
 
 ## Установка и обновление
 
-1. Сохраните [папку расширения с GitHub](https://github.com/TAM-WD/360/tree/main/Extensions/Telemost/telemost-opener) в постоянном месте на ПК. Если скачали весь репозиторий, используйте вложенную папку `Extensions/Telemost/telemost-opener`.
+1. Скачайте [ZIP версии 2.0.0](https://github.com/TAM-WD/360/raw/refs/heads/main/Extensions/Telemost/telemost-opener/telemost-opener-2.0.0.zip) и распакуйте папку `telemost-opener` в постоянное место на ПК. Также доступна [папка расширения на GitHub](https://github.com/TAM-WD/360/tree/main/Extensions/Telemost/telemost-opener); если скачали весь репозиторий, используйте вложенную папку `Extensions/Telemost/telemost-opener`.
 2. Откройте `chrome://extensions` (Edge: `edge://extensions`, Яндекс Браузер: `browser://extensions`). Включите режим разработчика и выберите **Загрузить распакованное расширение** → папку `telemost-opener`, содержащую `manifest.json`.
 3. Разрешите доступ **на всех сайтах**. Для локальных HTML-файлов отдельно включите доступ к URL файлов; для инкогнито — соответствующее разрешение.
 4. Обновите открытые страницы. Обработчик протокола `telemost://` должен быть зарегистрирован установленным приложением.
