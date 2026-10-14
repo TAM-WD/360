@@ -1,18 +1,43 @@
 {
   "manifest_version": 3,
-  "name": "Телемост — открыть в приложении",
-  "version": "1.2.0",
-  "description": "Открывает ссылки встреч Телемоста в приложении: клики и переходы через адресную строку. Закрывает лишнюю вкладку.",
+  "name": "Открыватель приложений",
+  "version": "2.0.0",
+  "description": "Открывает ссылки встреч, чатов и сотрудников в Телемосте. Настраиваемые правила для других приложений.",
   "minimum_chrome_version": "102",
-  "permissions": ["webNavigation", "tabs", "storage"],
-  "background": { "service_worker": "background.js" },
+  "permissions": [
+    "webNavigation",
+    "tabs",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "file:///*"],
-      "js": ["url-router.js", "content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "js": [
+        "url-router.js",
+        "content-config.js",
+        "content.js"
+      ],
       "run_at": "document_start",
       "all_frames": true,
       "match_about_blank": true
     }
-  ]
+  ],
+  "action": {
+    "default_title": "Открыватель приложений",
+    "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "storage": {
+    "managed_schema": "managed-schema.json"
+  }
 }

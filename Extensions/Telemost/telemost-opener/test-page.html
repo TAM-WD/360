@@ -10,7 +10,7 @@
   iframe { display: block; width: 100%; height: 80px; border: 1px solid #ccd3dc; margin: 16px 0; }
 </style>
 <h1>Проверка Телемоста</h1>
-<p>Ссылки /j/… должны вызвать telemost://, а /join#… — telemost://ychat/, сохранив эту страницу и число вкладок. Номера встреч вымышлены.</p>
+<p>Ссылки /j/… должны вызвать telemost://, а /join#… и /staff/… — telemost://ychat/, сохранив эту страницу и число вкладок. Номера встреч вымышлены.</p>
 <p>Проверьте обычный клик, Ctrl/Cmd+клик, Shift+клик, среднюю кнопку, затем Tab → Enter. Для локального файла включите доступ расширения к URL файлов.</p>
 <ul>
   <li><a id="regular" href="https://telemost.360.yandex.ru/j/123456789">Обычная ссылка</a></li>
@@ -19,6 +19,8 @@
   <li><a id="scripted" href="https://telemost.360.yandex.ru/j/123456789" target="_blank">Ссылка с JavaScript-обработчиком</a></li>
   <li><a id="join" href="https://telemost.360.yandex.ru/join#room%2F123?token=A%2BB&amp;source=test" target="_blank"><strong>Ссылка /join#… → telemost://ychat/</strong></a></li>
   <li><a id="legacy-join" href="https://telemost.yandex.ru/join#room%2F123?token=A%2BB&amp;source=test" target="_blank"><strong>Ссылка /join#… на telemost.yandex.ru → telemost://ychat/</strong></a></li>
+  <li><a id="staff" href="https://telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&amp;from=auto_redirect_ms" target="_blank">Staff на telemost.yandex.ru</a></li>
+  <li><a id="staff-360" href="https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&amp;from=auto_redirect_ms" target="_blank">Staff на telemost.360.yandex.ru</a></li>
   <li><span id="shadow"></span></li>
   <li id="dynamic"></li>
 </ul>
@@ -30,6 +32,8 @@
 <h2>Переход без клика по ссылке</h2>
 <p>Выделите целиком один из адресов ниже → правая кнопка → «Перейти по адресу». Новая вкладка должна закрыться, а запрос на открытие приложения — появиться в этой вкладке. Повторите тест, вставив адрес в адресную строку новой вкладки.</p>
 <ul>
+  <li><code>https://telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&amp;from=auto_redirect_ms</code></li>
+  <li><code>https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&amp;from=auto_redirect_ms</code></li>
   <li><code>https://telemost.yandex.ru/j/123456789</code></li>
   <li><code>https://telemost.360.yandex.ru/j/123456789</code></li>
   <li><code>https://telemost.yandex.ru/join#room123</code></li>

@@ -1,0 +1,2 @@
+# Publish the extension regression tests alongside its source.
+!tests/

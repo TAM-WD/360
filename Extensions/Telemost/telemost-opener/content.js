@@ -12,7 +12,7 @@
         node.getAttributeNS("http://www.w3.org/1999/xlink", "href");
       if (!href) continue;
 
-      return TelemostRouter.toAppUrl(href, node.baseURI);
+      return RedirectSettings.toAppUrl(href, node.baseURI);
     }
     return null;
   }

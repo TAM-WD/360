@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const source = readFileSync(join(__dirname, '..', 'url-router.js'), 'utf8') + '\n' +
+  'globalThis.RedirectSettings = { toAppUrl: (value, base) => TelemostRouter.toAppUrl(value, base, CONFIG) };\n' +
   readFileSync(join(__dirname, '..', 'content.js'), 'utf8');
 
 function setup() {
@@ -27,7 +28,7 @@ function setup() {
       listeners.set(type, handler);
     }
   };
-  vm.runInNewContext(source, { window, Element, URL });
+  vm.runInNewContext(source, { window, Element, URL, CONFIG: require('./fixtures.cjs').base });
   function activate(href, props = {}) {
     const node = new Element(href, props.tag, props.base);
     const event = {
@@ -45,6 +46,10 @@ function setup() {
 }
 
 for (const [route, url, expected] of [
+  ['staff legacy domain', 'https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test',
+    'telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test'],
+  ['staff', 'https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test',
+    'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms#test'],
   ['j legacy domain', 'https://telemost.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room',
     'telemost://https://telemost.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room'],
   ['j', 'https://telemost.360.yandex.ru/j/ABC%2Fdef?token=A%2BB&source=calendar#room',
@@ -70,6 +75,7 @@ for (const [route, url, expected] of [
 }
 
 for (const href of [
+  'https://telemost.yandex.ru/staff', 'https://telemost.yandex.ru/staff/', 'https://telemost.360.yandex.ru/staff//person',
   'https://example.com/', 'https://telemost.yandex.ru.evil.example/j/1',
   'https://telemost.360.yandex.ru.evil.example/j/1',
   'https://eviltelemost.yandex.ru/j/1', 'https://telemost.yandex.ru@evil.example/j/1',

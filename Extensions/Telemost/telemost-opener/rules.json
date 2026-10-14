@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "telemost-j",
+      "name": "Телемост: встречи",
+      "enabled": true,
+      "userToggleAllowed": true,
+      "match": {
+        "origins": [
+          "https://telemost.yandex.ru",
+          "https://telemost.360.yandex.ru"
+        ],
+        "pathname": "/j/{tail}",
+        "hashRequired": false
+      },
+      "target": "telemost://{url}",
+      "examples": [
+        {
+          "url": "https://telemost.yandex.ru/j/123456789",
+          "appUrl": "telemost://https://telemost.yandex.ru/j/123456789"
+        },
+        {
+          "url": "https://telemost.360.yandex.ru/j/123456789",
+          "appUrl": "telemost://https://telemost.360.yandex.ru/j/123456789"
+        }
+      ]
+    },
+    {
+      "id": "telemost-join",
+      "name": "Телемост: чаты",
+      "enabled": true,
+      "userToggleAllowed": true,
+      "match": {
+        "origins": [
+          "https://telemost.yandex.ru",
+          "https://telemost.360.yandex.ru"
+        ],
+        "pathname": "/join",
+        "hashRequired": true
+      },
+      "target": "telemost://ychat/{urlNoScheme}",
+      "examples": [
+        {
+          "url": "https://telemost.yandex.ru/join#room123",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/join#room123"
+        },
+        {
+          "url": "https://telemost.360.yandex.ru/join#room123",
+          "appUrl": "telemost://ychat/telemost.360.yandex.ru/join#room123"
+        }
+      ]
+    },
+    {
+      "id": "telemost-staff",
+      "name": "Телемост: сотрудники",
+      "enabled": true,
+      "userToggleAllowed": true,
+      "match": {
+        "origins": [
+          "https://telemost.yandex.ru",
+          "https://telemost.360.yandex.ru"
+        ],
+        "pathname": "/staff/{tail}",
+        "hashRequired": false
+      },
+      "target": "telemost://ychat/{urlNoScheme}",
+      "examples": [
+        {
+          "url": "https://telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms"
+        },
+        {
+          "url": "https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms",
+          "appUrl": "telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123456789&from=auto_redirect_ms"
+        }
+      ]
+    },
+    {
+      "id": "messenger-staff",
+      "name": "Мессенджер: сотрудники",
+      "enabled": true,
+      "userToggleAllowed": true,
+      "match": {
+        "origins": [
+          "https://messenger.360.yandex.ru"
+        ],
+        "pathname": "/",
+        "hashPathname": "/staff/{tail}",
+        "hashRequired": true
+      },
+      "target": "telemost://ychat/telemost.yandex.ru{hashPathAndQuery}",
+      "examples": [
+        {
+          "url": "https://messenger.360.yandex.ru/#/staff/example-user",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/example-user"
+        },
+        {
+          "url": "https://messenger.360.yandex.ru/#/staff/person%40example.net?selectedUid=123456789&from=auto_redirect_ms",
+          "appUrl": "telemost://ychat/telemost.yandex.ru/staff/person%40example.net?selectedUid=123456789&from=auto_redirect_ms"
+        }
+      ]
+    }
+  ]
+}

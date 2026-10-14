@@ -22,7 +22,7 @@ async function main() {
   try {
     const extension = path.join(temp, 'extension');
     await fs.mkdir(extension);
-    for (const file of ['manifest.json', 'content.js', 'url-router.js', 'handoff.html', 'handoff.js']) {
+    for (const file of ['manifest.json', 'url-router.js', 'content-config.js', 'config-core.js', 'config-service.js', 'user-rules-file.js', 'config.json', 'rules.json', 'managed-schema.json', 'handoff.html', 'handoff.js', 'options.html', 'popup.html', 'settings.css', 'settings-ui.js', 'options.js', 'rule-inference.js', 'content.js']) {
       await fs.copyFile(path.join(root, file), path.join(extension, file));
     }
     let background = await fs.readFile(path.join(root, 'background.js'), 'utf8');
@@ -73,6 +73,8 @@ async function main() {
       await cdp.detach().catch(() => {});
     }
     const cases = [
+      ['https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms'],
+      ['https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms', 'telemost://ychat/telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms'],
       ['https://telemost.yandex.ru/j/123?from=test#room', 'telemost://https://telemost.yandex.ru/j/123?from=test#room'],
       ['https://telemost.360.yandex.ru/j/123?from=test#room', 'telemost://https://telemost.360.yandex.ru/j/123?from=test#room'],
       ['https://telemost.yandex.ru/join#room%2F123?token=A%2BB', 'telemost://ychat/telemost.yandex.ru/join#room%2F123?token=A%2BB'],
@@ -110,10 +112,17 @@ async function main() {
         throw error;
       }
       assert.equal(source.isClosed(), false);
-      assert.equal(source.url(), fixture);
       assert.equal(context.pages().length, 1);
       assert.equal((await last()).appUrl, appUrl);
-      pass(`typed URL in existing tab restores its page; ${url}`);
+      if (url.includes('/staff/')) {
+        assert.match(source.url(), /\/handoff\.html#/);
+        assert.equal(await source.locator('#close').isVisible(), true);
+        pass(`typed staff URL keeps a stable launch host; ${url}`);
+        await source.goto(fixture);
+      } else {
+        assert.equal(source.url(), fixture);
+        pass(`typed URL in existing tab restores its page; ${url}`);
+      }
     }
     // Browser-created navigation target with opener: equivalent destination
     // lifecycle to built-in Go to. No anchor click/content interception involved.

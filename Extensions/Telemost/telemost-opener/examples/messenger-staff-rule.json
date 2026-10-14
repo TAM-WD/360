@@ -1,0 +1,22 @@
+{
+  "id": "custom-be7e27d7-2575-4012-a48a-51751138b939",
+  "name": "mess staff",
+  "enabled": true,
+  "userToggleAllowed": true,
+  "match": {
+    "origins": [
+      "https://messenger.360.yandex.ru"
+    ],
+    "pathname": "/",
+    "hashPathname": "/staff/{tail}",
+    "hashRequired": true,
+    "queryKeys": []
+  },
+  "target": "telemost://ychat/telemost.yandex.ru{hashPathAndQuery}",
+  "examples": [
+    {
+      "url": "https://messenger.360.yandex.ru/#/staff/a1b2c3",
+      "appUrl": "telemost://ychat/telemost.yandex.ru/staff/a1b2c3"
+    }
+  ]
+}

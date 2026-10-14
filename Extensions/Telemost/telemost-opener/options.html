@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Открыватель приложений — настройки</title><link rel="stylesheet" href="settings.css"></head>
+<body><main>
+<div class="brand">ОТКРЫВАТЕЛЬ ПРИЛОЖЕНИЙ · 2.0.0</div><h1>Ссылки открываются там, где удобно</h1>
+<p class="muted">Выберите типы ссылок и добавьте правила для своих приложений. Настройки действуют и для кликов, и для переходов через адресную строку.</p>
+<div id="policy" class="notice" hidden></div><p id="status" class="status" role="status" aria-live="polite"></p>
+<section><h2>Правила открытия</h2><div id="rules"></div></section>
+<section id="custom-section"><h2>Своё приложение</h2>
+<p>Вставьте пример обычной ссылки и соответствующий ей адрес приложения. Расширение предложит подстановку; проверьте её на другом адресе.</p>
+<p class="muted">При сохранении значения переменных в примерах заменяются тестовыми: числа — на 123456, текст и коды — на a1b2c3. Домены и постоянные части шаблона сохраняются. Точное правило без переменных сначала нужно обобщить.</p>
+<fieldset id="editor-fields">
+<label class="field">Название<input id="rule-name" maxlength="120" placeholder="Например, Рабочие встречи"></label>
+<label class="field">Открываемая ссылка<input id="source-url" type="text" spellcheck="false" placeholder="https://meet.example.com/room/123"></label>
+<label class="field">Ассоциация приложения<input id="app-url" type="text" spellcheck="false" placeholder="meetingapp://join?id=123"></label>
+<div class="actions"><button id="analyze" class="primary">Определить подстановку</button><button id="clear-editor">Очистить</button></div>
+<div id="proposal" hidden>
+<p id="inference-note" class="notice"></p><p id="scope"></p>
+<label class="field">Проверить на другой ссылке<input id="try-url" type="text" spellcheck="false"></label>
+<pre id="preview" aria-live="polite"></pre>
+<details><summary>Изменить шаблон вручную</summary>
+<p class="muted">JSON содержит условия, подстановку и исходную пару. Изменяйте его, если одной пары недостаточно для определения правила.</p>
+<label class="field">JSON правила<textarea id="rule-json" rows="16" spellcheck="false"></textarea></label>
+<p class="muted">В условии пути можно выделить часть сегмента: <code>"pathname": "/+{invite}"</code>. В адрес приложения подставьте <code>{capture:invite}</code> — код без фиксированного <code>+</code>. Имя выбираете вы. Допускается одна переменная на сегмент, в том числе с префиксом и суффиксом: <code>/file-{id}.json</code>.</p>
+<p class="muted">Для ссылок вида <code>#/staff/имя</code> задайте условие <code>match.hashPathname</code>. Переменные: <code>{hashPathAndQuery}</code> — весь путь после # с параметрами, <code>{hashPathname}</code> — без параметров, <code>{hashPath:1}</code> — второй сегмент, <code>{hashTail}</code> — остаток условия с <code>{tail}</code>.</p>
+</details>
+<details id="variable-help"><summary>Справочник переменных с примерами</summary>
+<p>Пример исходной ссылки:</p><pre>https://example.org:8443/room/123/details?id=456&amp;mode=guest#chat</pre>
+<div class="variable-table"><table>
+<thead><tr><th>Переменная</th><th>Что подставляет</th><th>Результат для примера</th></tr></thead>
+<tbody>
+<tr><td><code>{host}</code></td><td>Домен с портом, если он есть; без схемы и пути.</td><td><code>example.org:8443</code></td></tr>
+<tr><td><code>{pathname}</code></td><td>Весь путь с начальным /, без query и фрагмента.</td><td><code>/room/123/details</code></td></tr>
+<tr><td><code>{pathAndQuery}</code></td><td>Путь вместе с query и фрагментом, включая ? и #.</td><td><code>/room/123/details?id=456&amp;mode=guest#chat</code></td></tr>
+<tr><td><code>{search}</code></td><td>Все параметры после ?, включая сам ?. Без параметров — пустая строка.</td><td><code>?id=456&amp;mode=guest</code></td></tr>
+<tr><td><code>{hash}</code></td><td>Фрагмент вместе с #. Без фрагмента — пустая строка.</td><td><code>#chat</code></td></tr>
+<tr><td><code>{fragment}</code></td><td>Фрагмент без #.</td><td><code>chat</code></td></tr>
+<tr><td><code>{tail}</code></td><td>Остаток пути для условия <code>/room/{tail}</code>, без query и фрагмента.</td><td><code>123/details</code></td></tr>
+<tr><td><code>{path:1}</code></td><td>Второй целый сегмент пути. Нумерация начинается с 0.</td><td><code>123</code></td></tr>
+<tr><td><code>{query:id}</code></td><td>Значение параметра id из query, без имени параметра.</td><td><code>456</code></td></tr>
+</tbody></table></div>
+<p><code>{capture:invite}</code> берёт значение переменной <code>{invite}</code> из условия пути. Для <code>/+{invite}</code> и ссылки <code>https://t.me/+ABC</code> результат — <code>ABC</code>; <code>{path:0}</code> при этом даёт целый сегмент <code>+ABC</code>. Для именованных переменных внутри <code>hashPathname</code> используется <code>{hashCapture:имя}</code>.</p>
+<p>Имя переменной: 1–40 латинских букв, цифр или _, начиная с буквы; регистр учитывается. Имя должно однозначно определять одну переменную в своём пути. <code>{tail}</code> — специальное обозначение всего непустого остатка пути; оно занимает последний сегмент целиком.</p>
+<p class="muted">URL-кодирование сохраняется: <code>%2F</code> не превращается в /. Для дополнительного кодирования добавьте <code>|encode</code>, например <code>{capture:invite|encode}</code>. Если query-параметр отсутствует или повторён, его подстановка не выполняется; <code>queryKeys: ["id"]</code> также требует непустого значения. <code>{url}</code> передаёт весь URL, <code>{urlNoScheme}</code> — URL без схемы.</p>
+</details>
+<button id="save-rule" class="primary">Сохранить правило</button>
+</div></fieldset></section>
+<section><h2>Файлы настроек и правил</h2><p class="muted">config.json содержит настройки, rules.json — правила поставки. Пользовательские правила автоматически сохраняются отдельно в user-rules.json внутри профиля браузера. Чтобы получить обычный файл для переноса или резервной копии, скачайте его ниже.</p>
+<p class="muted">При импорте настроек меняются только разрешённые переключатели. Импорт user-rules.json заменяет личные правила и сохраняет тестовые примеры. Правила поставки заменяются в файле rules.json папки расширения. Старый общий JSON тоже можно импортировать.</p>
+<div class="actions"><button id="export-config">Скачать настройки</button><button id="export-rules">Скачать правила поставки</button><button id="export-user-rules">Скачать свои правила</button><button id="reset-settings">Вернуть настройки из поставки</button></div>
+<details><summary>Импортировать JSON</summary><fieldset id="import-fields">
+<label class="field">Выбрать файл<input id="import-file" type="file" accept=".json,application/json"></label>
+<label class="field">Или вставить JSON<textarea id="import-json" rows="10" spellcheck="false"></textarea></label>
+<button id="import-config" class="primary">Применить конфиг</button>
+</fieldset></details></section>
+</main><script src="url-router.js"></script><script src="rule-inference.js"></script><script src="settings-ui.js"></script><script src="options.js"></script></body></html>

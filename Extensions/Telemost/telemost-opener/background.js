@@ -1,8 +1,9 @@
 "use strict";
-importScripts("url-router.js");
+importScripts("url-router.js", "config-core.js", "user-rules-file.js", "config-service.js");
 
 const handoffBase = chrome.runtime.getURL("handoff.html");
 const pending = new Map();
+const intents = new Map();
 const sources = new Map();
 const restoring = new Set();
 const lastPages = new Map();
@@ -10,28 +11,48 @@ const taskKey = token => `handoff:${token}`;
 const pageKey = id => `page:${id}`;
 const isHandoff = url => typeof url === "string" && url.startsWith(`${handoffBase}#`);
 const isEmpty = url => !url || /^(about:blank|(?:chrome|edge|browser):\/\/(?:newtab|new-tab-page)\/?|chrome-search:\/\/local-ntp\/local-ntp.html)$/.test(url);
+function needsStableHandoff(value, appUrl) {
+  // Staff is also reached through automatic Messenger redirects. Reloading
+  // their source starts the same redirect again, cancelling the native prompt
+  // and creating an unbounded launch/restore loop. Keep the helper as the host.
+  // A custom Messenger -> Telemost staff rule has the same redirect risk.
+  const urls = [value];
+  if (appUrl.startsWith("telemost://ychat/")) urls.push("https://" + appUrl.slice("telemost://ychat/".length));
+  return urls.some(candidate => {
+    const url = TelemostRouter.webUrl(candidate);
+    return url && ["https://telemost.yandex.ru", "https://telemost.360.yandex.ru"].includes(url.origin) &&
+      url.pathname.startsWith("/staff/");
+  });
+}
 
 const initialized = chrome.storage.session.get(null).then(async saved => {
+  await ConfigService.ready;
   for (const [key, value] of Object.entries(saved)) {
     if (key.startsWith("page:")) lastPages.set(Number(key.slice(5)), value);
   }
   for (const tab of await chrome.tabs.query({})) {
-    if (tab.url && !isHandoff(tab.url) && !TelemostRouter.toAppUrl(tab.url)) {
+    if (tab.url && !isHandoff(tab.url) && !ConfigService.toAppUrl(tab.url)) {
       lastPages.set(tab.id, tab.url);
     }
   }
 });
 
-function remember(details) {
-  if (details.frameId !== 0 || isHandoff(details.url) || TelemostRouter.toAppUrl(details.url)) return;
+async function remember(details) {
+  await ConfigService.ready;
+  if (details.frameId !== 0 || isHandoff(details.url) || ConfigService.toAppUrl(details.url)) return;
   lastPages.set(details.tabId, details.url);
   chrome.storage.session.set({ [pageKey(details.tabId)]: details.url }).catch(() => {});
 }
 
 async function intercept(details) {
   if (details.frameId !== 0 || details.tabId < 0 || restoring.has(details.tabId)) return;
-  if (isHandoff(details.url) || details.url.startsWith("telemost:")) return;
-  const appUrl = TelemostRouter.toAppUrl(details.url);
+  if (isHandoff(details.url) || !/^https?:/.test(details.url)) return;
+  const intent = {};
+  intents.set(details.tabId, intent);
+  const initialTab = chrome.tabs.get(details.tabId).catch(() => null);
+  await ConfigService.ready;
+  if (intents.get(details.tabId) !== intent) return;
+  const appUrl = ConfigService.toAppUrl(details.url);
   const old = pending.get(details.tabId);
   if (!appUrl) {
     if (old) {
@@ -46,9 +67,10 @@ async function intercept(details) {
   pending.set(details.tabId, task);
   try {
     await initialized;
-    const tab = await chrome.tabs.get(details.tabId);
+    const tab = await initialTab;
+    if (!tab) return;
     if (pending.get(details.tabId) !== task) return;
-    const prior = (!TelemostRouter.toAppUrl(tab.url) && !isHandoff(tab.url) && tab.url) || lastPages.get(tab.id);
+    const prior = (!ConfigService.toAppUrl(tab.url) && !isHandoff(tab.url) && tab.url) || lastPages.get(tab.id);
     task.returnUrl = isEmpty(prior) ? null : prior;
     // A blank/new tab contains no previous page to preserve. Existing pages and
     // pinned tabs are never automatically closed by this extension.
@@ -99,13 +121,15 @@ function waitForNavigation(tabId, start) {
 }
 
 async function complete(task) {
+  await ConfigService.ready;
+  if (ConfigService.toAppUrl(task.url) !== task.appUrl) throw new Error("Правило отключено или изменилось. Повторите переход.");
   const target = await chrome.tabs.get(task.tabId);
   if (!await isCurrent(task)) throw new Error("Вкладка уже перешла на другую страницу.");
   if (task.closeTab) {
     const tabs = await chrome.tabs.query({ windowId: target.windowId });
     const available = tabs.filter(tab => tab.id !== target.id && !tab.discarded &&
       !tab.pendingUrl && tab.status === "complete" && !isEmpty(tab.url) && !isHandoff(tab.url) &&
-      !TelemostRouter.toAppUrl(tab.url));
+      !ConfigService.toAppUrl(tab.url));
     const anchor = available.find(tab => tab.id === task.sourceId) ||
       available.find(tab => tab.active) || available[0];
     if (anchor) {
@@ -116,14 +140,14 @@ async function complete(task) {
       return { closed: true };
     }
   }
-  if (task.returnUrl) {
+  if (task.returnUrl && !needsStableHandoff(task.url, task.appUrl)) {
     restoring.add(task.tabId);
     try {
       let url;
       try { url = await waitForNavigation(task.tabId, () => chrome.tabs.goBack(task.tabId)); } catch { /* Reload the saved page below if history is unavailable. */ }
       // A fast HTTPS response may commit before the background worker replaces
       // it with handoff.html. Skip that extra history entry too.
-      if (TelemostRouter.toAppUrl(url)) {
+      if (ConfigService.toAppUrl(url)) {
         try { url = await waitForNavigation(task.tabId, () => chrome.tabs.goBack(task.tabId)); } catch { /* Fall back to the saved URL. */ }
       }
       // Chrome's Back action can skip entries without a user interaction.
@@ -143,13 +167,14 @@ async function complete(task) {
 
 chrome.webNavigation.onBeforeNavigate.addListener(details => { void intercept(details); });
 chrome.webNavigation.onReferenceFragmentUpdated.addListener(details => { void intercept(details); });
-chrome.webNavigation.onCommitted.addListener(remember);
+chrome.webNavigation.onCommitted.addListener(details => { void remember(details); });
 chrome.webNavigation.onCreatedNavigationTarget.addListener(details => {
   sources.set(details.tabId, details.sourceTabId);
 });
 chrome.tabs.onRemoved.addListener(tabId => {
   const task = pending.get(tabId);
   pending.delete(tabId);
+  intents.delete(tabId);
   lastPages.delete(tabId);
   sources.delete(tabId);
   const keys = [pageKey(tabId)];
@@ -159,15 +184,19 @@ chrome.tabs.onRemoved.addListener(tabId => {
 
 const completing = new Set();
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
-  if (message?.type !== "handoff-ready" || !sender.tab ||
-      sender.url !== `${handoffBase}#${message.token}`) return;
+  if (message?.type !== "handoff-ready" || !sender.tab || sender.id !== chrome.runtime.id ||
+      sender.frameId !== 0 || !isHandoff(sender.url)) return;
+  // After a fragment-only change Chromium can report the document's original
+  // URL in sender.url. Validate the helper here; complete() checks the token
+  // against the actual current tab URL and the task's owning tab before launch.
   const token = message.token;
   if (completing.has(token)) { respond({ error: "Запуск уже выполняется." }); return; }
   completing.add(token);
   (async () => {
     const saved = await chrome.storage.session.get(taskKey(token));
+    await ConfigService.ready;
     const task = saved[taskKey(token)];
-    if (!task || task.tabId !== sender.tab.id || TelemostRouter.toAppUrl(task.url) !== task.appUrl) {
+    if (!task || task.tabId !== sender.tab.id || ConfigService.toAppUrl(task.url) !== task.appUrl) {
       return { error: "Ссылка устарела. Повторите переход из исходной страницы." };
     }
     try { return await complete(task); }
@@ -178,5 +207,22 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
     }
   })().then(respond, () => respond({ error: "Не удалось передать ссылку приложению." }))
     .finally(() => completing.delete(token));
+  return true;
+});
+
+
+const settingsPages = [chrome.runtime.getURL("options.html"), chrome.runtime.getURL("popup.html")];
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message?.type === "get-config" && sender.id === chrome.runtime.id) {
+    ConfigService.ready.then(() => respond(ConfigService.snapshot));
+    return true;
+  }
+  if (!["change-config", "export-files"].includes(message?.type)) return;
+  if (sender.id !== chrome.runtime.id || !settingsPages.includes((sender.url || "").split(/[?#]/)[0])) {
+    respond({ error: "Настройки можно менять только через окно расширения." });
+    return;
+  }
+  const operation = message.type === "export-files" ? ConfigService.exportFiles() : ConfigService.execute(message.command);
+  operation.then(respond, error => respond({ error: error.message }));
   return true;
 });

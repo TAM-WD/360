@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-03/schema#",
+  "type": "object",
+  "properties": {
+    "ConfigJSON": {"type": "string", "title": "Settings", "description": "Settings config.json as a JSON string. Legacy combined configuration is also supported."},
+    "RulesJSON": {"type": "string", "title": "Redirect rules", "description": "rules.json as a JSON string. Overrides packaged and legacy combined rules."},
+    "AllowUserChanges": {"type": "boolean", "title": "Allow user changes", "description": "Whether users may change redirect settings. Overrides allowUserChanges."},
+    "AllowCustomRules": {"type": "boolean", "title": "Allow custom rules", "description": "Whether users may create, edit, import and use personal custom rules."}
+  }
+}

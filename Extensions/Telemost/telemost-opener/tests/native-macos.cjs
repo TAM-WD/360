@@ -44,7 +44,7 @@ const lsregister = '/System/Library/Frameworks/CoreServices.framework/Frameworks
     const extension = path.join(tmp, 'extension');
     await fs.mkdir(extension);
     const root = path.resolve(__dirname, '..');
-    for (const file of ['manifest.json', 'content.js', 'url-router.js', 'background.js', 'handoff.html', 'handoff.js']) await fs.copyFile(path.join(root, file), path.join(extension, file));
+    for (const file of ['manifest.json', 'url-router.js', 'content-config.js', 'config-core.js', 'config-service.js', 'user-rules-file.js', 'config.json', 'rules.json', 'managed-schema.json', 'background.js', 'handoff.html', 'handoff.js', 'options.html', 'popup.html', 'settings.css', 'settings-ui.js', 'options.js', 'rule-inference.js', 'content.js']) await fs.copyFile(path.join(root, file), path.join(extension, file));
     const manifest = JSON.parse(await fs.readFile(path.join(extension, 'manifest.json')));
     const key = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).publicKey.export({type:'spki',format:'der'});
     manifest.key = key.toString('base64');
@@ -62,7 +62,14 @@ const lsregister = '/System/Library/Frameworks/CoreServices.framework/Frameworks
       } }
     }));
     context = await chromium.launchPersistentContext(profile, {executablePath:process.env.CHROMIUM_PATH || undefined,channel:process.env.CHROMIUM_PATH ? undefined : 'chromium',headless:false,ignoreDefaultArgs:['--disable-extensions'],args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]});
-    await context.route('https://**/*', route => route.fulfill({contentType:'text/html',body:'<title>Native launch test</title><button>Source</button>'}));
+    let redirectTarget = null, redirectLoads = 0;
+    await context.route('https://**/*', route => {
+      const auto = route.request().url() === 'https://source.example/auto';
+      if (auto) redirectLoads++;
+      return route.fulfill({ contentType: 'text/html', body: auto
+        ? `<title>Automatic staff redirect</title><script>setTimeout(() => location.replace(${JSON.stringify(redirectTarget)}), 100);</script>`
+        : '<title>Native launch test</title><button>Source</button>' });
+    });
     const worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker');
     await worker.evaluate(() => initialized);
     assert.equal(await worker.evaluate(() => chrome.runtime.id), id);
@@ -75,6 +82,8 @@ const lsregister = '/System/Library/Frameworks/CoreServices.framework/Frameworks
     console.log('PASS browser receiver self-test');
     await fs.writeFile(log, '');
     const cases = [
+      'https://telemost.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms',
+      'https://telemost.360.yandex.ru/staff/person@example.net?selectedUid=123&from=auto_redirect_ms',
       'https://telemost.yandex.ru/j/123?test=native#room',
       'https://telemost.360.yandex.ru/join#room%2F123',
       'https://telemost.360.yandex.ru/j/123?test=native#room',
@@ -91,14 +100,52 @@ const lsregister = '/System/Library/Frameworks/CoreServices.framework/Frameworks
         await delay(100);
       }
       assert.equal(target.isClosed(),true);
-      const expected = cases[i].includes('/join#') ? `${scheme}://ychat/${cases[i].slice(8)}` : `${scheme}://${cases[i]}`;
+      const expected = (cases[i].includes('/join#') || cases[i].includes('/staff/')) ? `${scheme}://ychat/${cases[i].slice(8)}` : `${scheme}://${cases[i]}`;
       // Chromium/macOS canonicalizes an empty port in the nested https: authority.
       assert.equal(received.trim().split('\n')[i], new URL(expected).href);
       assert.equal(context.pages().length,1);
       assert.equal(source.url(),'https://source.example/');
       console.log(`PASS native handoff and destination close: ${cases[i]}`);
     }
-    console.log('4 native protocol handoff checks passed; temporary scheme only.');
+    // The regression needs a real receiver too: a retained helper must still
+    // deliver its URL to the OS, exactly once, without restoring the redirector.
+    for (let i = 0; i < 2; i++) {
+      redirectTarget = cases[i]; redirectLoads = 0;
+      await source.goto('https://source.example/auto');
+      let received = [];
+      for (let n = 0; n < 100; n++) {
+        received = (await fs.readFile(log, 'utf8').catch(() => '')).trim().split('\n').filter(Boolean);
+        if (received.length >= cases.length + i + 1) break;
+        await delay(100);
+      }
+      await delay(1500);
+      received = (await fs.readFile(log, 'utf8')).trim().split('\n').filter(Boolean);
+      assert.equal(received.length, cases.length + i + 1, 'automatic staff redirect launches once');
+      assert.equal(received.at(-1), new URL(`${scheme}://ychat/${redirectTarget.slice(8)}`).href);
+      assert.equal(redirectLoads, 1, 'source is not restored');
+      assert.match(source.url(), /\/handoff\.html#/);
+      assert.equal(await source.locator('#close').isVisible(), true);
+      assert.equal(context.pages().length, 1);
+      console.log(`PASS native staff redirect, exactly once without reload: ${redirectTarget}`);
+    }
+    await source.reload();
+    await source.locator('#close').waitFor({ state: 'visible' });
+    const retry = await context.newCDPSession(source);
+    await retry.send('Page.navigate', { url: redirectTarget, transitionType: 'typed' }).catch(() => {});
+    await retry.detach();
+    let received = [];
+    for (let n = 0; n < 100; n++) {
+      received = (await fs.readFile(log, 'utf8')).trim().split('\n').filter(Boolean);
+      if (received.length >= 9) break;
+      await delay(100);
+    }
+    await delay(1000);
+    received = (await fs.readFile(log, 'utf8')).trim().split('\n').filter(Boolean);
+    assert.equal(received.length, 9);
+    assert.equal(received.at(-1), new URL(`${scheme}://ychat/${redirectTarget.slice(8)}`).href);
+    assert.match(source.url(), /\/handoff\.html#/);
+    console.log('PASS native manual retry from retained helper, exactly once');
+    console.log('9 native protocol handoff checks passed; temporary scheme only.');
   } finally {
     if(context) await context.close();
     const ownProcesses = execFileSync('/bin/ps', ['-axo', 'pid=,command=']).toString().split('\n');

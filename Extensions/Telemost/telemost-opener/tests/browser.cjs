@@ -18,9 +18,19 @@ async function main() {
   let context;
   try {
     await fs.mkdir(extension);
-    for (const name of ['manifest.json', 'url-router.js', 'background.js', 'handoff.html', 'handoff.js']) {
+    for (const name of ['manifest.json', 'url-router.js', 'content-config.js', 'config-core.js', 'config-service.js', 'user-rules-file.js', 'config.json', 'rules.json', 'managed-schema.json', 'background.js', 'handoff.html', 'handoff.js', 'options.html', 'popup.html', 'settings.css', 'settings-ui.js', 'options.js', 'rule-inference.js']) {
       await fs.copyFile(path.join(root, name), path.join(extension, name));
     }
+    const configScript = await fs.readFile(path.join(extension, 'content-config.js'), 'utf8');
+    await fs.writeFile(path.join(extension, 'content-config.js'), configScript + `
+RedirectSettings.ready.then(() => {
+      const mark = () => { document.documentElement.dataset.settingsReady = '1'; };
+      if (document.documentElement) mark(); else document.addEventListener('DOMContentLoaded', mark, {once:true});
+    });`);
+    const background = await fs.readFile(path.join(extension, 'background.js'), 'utf8');
+    await fs.writeFile(path.join(extension, 'background.js'), background.replace(
+      'await chrome.tabs.update(tabId, { url: appUrl, ...(activate ? { active: true } : {}) });',
+      '(globalThis.unexpectedNavigationLaunches ||= []).push(appUrl);'));
     const source = await fs.readFile(path.join(root, 'content.js'), 'utf8');
     const handoff = 'window.location.assign(appUrl);';
     assert.equal(source.split(handoff).length, 2, 'exactly one native handoff');
@@ -48,10 +58,11 @@ async function main() {
 
     async function check(name, action, suffix, targetFrame, expectedAppUrl = `telemost://${suffix}`) {
       await page.goto(origin);
+      await page.waitForFunction(() => document.documentElement?.dataset.settingsReady === '1');
       await page.waitForLoadState('load');
       await action();
       const frame = targetFrame ? targetFrame() : page;
-      await frame.waitForFunction(() => document.documentElement.dataset.telemostTestCount === '1', null, { timeout: 5000 });
+      await frame.waitForFunction(() => document.documentElement?.dataset.telemostTestCount === '1', null, { timeout: 5000 });
       assert.equal(await frame.locator('html').getAttribute('data-telemost-test-url'), expectedAppUrl);
       // Let default browser actions and synchronous site handlers settle.
       await page.waitForTimeout(100);
@@ -62,6 +73,13 @@ async function main() {
       assert.equal(await frame.locator('html').getAttribute('data-telemost-test-count'), '1');
       console.log(`PASS ${name}`);
       checks++;
+    }
+    for (const host of ['telemost.yandex.ru', 'telemost.360.yandex.ru']) {
+      const url = `https://${host}/staff/person@example.net?selectedUid=123&from=auto_redirect_ms`;
+      await check(`staff click on ${host}`, async () => {
+        await page.locator('#regular').evaluate((a, url) => a.href = url, url);
+        await page.locator('#regular').click();
+      }, url, null, `telemost://ychat/${url.slice(8)}`);
     }
     const plain = 'https://telemost.360.yandex.ru/j/123456789';
     const blank = 'https://telemost.360.yandex.ru/j/987654321?source=test#room';
@@ -74,6 +92,7 @@ async function main() {
     }
     if (process.platform === 'darwin') {
       await page.goto(origin);
+      await page.waitForFunction(() => document.documentElement?.dataset.settingsReady === '1');
       await page.locator('#blank').click({ modifiers: ['Control'] });
       assert.equal(await page.locator('html').getAttribute('data-telemost-test-url'), null);
       assert.equal(pagesCreated, 0);
@@ -131,6 +150,7 @@ async function main() {
       modifiers: [process.platform === 'darwin' ? 'Meta' : 'Control']
     }), legacyJoin, null, legacyJoinAppUrl);
     await page.goto(origin);
+      await page.waitForFunction(() => document.documentElement?.dataset.settingsReady === '1');
     await page.locator('#ordinary').click();
     assert.equal(page.url(), `${origin}/#control`);
     assert.equal(await page.locator('html').getAttribute('data-telemost-test-url'), null);
@@ -148,6 +168,7 @@ async function main() {
       'https://telemost.360.yandex.ru/join/#room'
     ]) {
       await page.goto(origin);
+      await page.waitForFunction(() => document.documentElement?.dataset.settingsReady === '1');
       await page.evaluate(href => {
         const link = Object.assign(document.createElement('a'), { id: 'excluded', href, textContent: 'Excluded URL' });
         document.body.append(link);

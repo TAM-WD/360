@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "examples": [
+    {
+      "appUrl": "tg://join?invite=a1b2c3",
+      "url": "https://t.me/+a1b2c3"
+    }
+  ],
+  "id": "custom-9fb0a587-9a2b-4ec8-a6d4-4258b06fc447",
+  "match": {
+    "hashRequired": false,
+    "origins": [
+      "https://t.me"
+    ],
+    "pathname": "/+{invite}",
+    "queryKeys": []
+  },
+  "name": "тг приглос",
+  "target": "tg://join?invite={capture:invite}",
+  "userToggleAllowed": true
+}
