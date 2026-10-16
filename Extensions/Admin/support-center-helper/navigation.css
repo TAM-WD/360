@@ -13,11 +13,39 @@
 }
 
 .ticket-nav-buttons button {
-  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background-color: transparent;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.ticket-nav-buttons button::before {
+  border-radius: inherit;
+}
+
+.ticket-nav-arrow {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .ticket-nav-buttons button:hover:not(:disabled) {
-  background-color: rgba(0, 0, 0, 0.04);
+  border-color: rgba(128, 128, 136, 0.5);
+  background-color: rgba(128, 128, 136, 0.22);
+}
+
+.ticket-nav-buttons button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .ticket-nav-buttons button:active:not(:disabled) {

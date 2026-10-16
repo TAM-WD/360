@@ -16,7 +16,7 @@
     <!-- Общая статистика -->
     <div class="stats-block">
       <div class="stat-item">
-        <span class="stat-label">Всего тикетов на странице:</span>
+        <span id="totalTicketsLabel" class="stat-label">Строк в списке на странице:</span>
         <span id="totalTickets" class="stat-value">0</span>
       </div>
     </div>
@@ -70,10 +70,16 @@
         </svg>
         <span>Скачать тикеты в CSV</span>
       </button>
-      <button id="clearBtn" class="clear-btn">Очистить данные</button>
-      <div id="exportInfo" class="export-info">Собрано: <span id="collectedCount">0</span> тикетов</div>
+      <button id="clearBtn" class="clear-btn">Очистить список этой вкладки</button>
+      <div id="exportInfo" class="export-info">Собрано в этой вкладке: <span id="collectedCount">0</span> тикетов</div>
+      <div class="export-info">Доступно с фильтрами: <span id="visibleCount">0</span> тикетов</div>
     </div>
 
+    <details id="navigationDiagnostics" class="export-info">
+      <summary>Диагностика навигации</summary>
+      <p>Только счётчики и причины обработки, без содержимого тикетов и данных учётной записи.</p>
+      <textarea id="diagnosticsText" readonly rows="12" aria-label="Диагностика навигации" style="width:100%;box-sizing:border-box"></textarea>
+    </details>
     <div id="status" class="status hidden"></div>
   </div>
 

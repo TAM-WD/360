@@ -14,6 +14,32 @@ const totalTicketsDiv = document.getElementById('totalTickets');
 const exportBtn = document.getElementById('exportBtn');
 const collectedCountDiv = document.getElementById('collectedCount');
 const clearBtn = document.getElementById('clearBtn');
+const diagnostics = document.getElementById('navigationDiagnostics');
+const diagnosticsText = document.getElementById('diagnosticsText');
+
+diagnostics.addEventListener('toggle', async () => {
+  if (!diagnostics.open) return;
+  try {
+    const state = await sendToActiveTab({action: 'getDiagnostics'});
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+    const navigation = await chrome.tabs.sendMessage(tab.id, {action: 'getNavigationDiagnostics'});
+    diagnosticsText.value = JSON.stringify({...state, navigation}, null, 2);
+  } catch (error) { diagnosticsText.value = error.message; }
+});
+
+// Popup has no sender.tab; always address the active support tab explicitly.
+async function sendToActiveTab(message) {
+  const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+  const url = tab?.url ? new URL(tab.url) : null;
+  if (!url || !['admin.yandex.ru', 'admin.360.yandex.ru'].includes(url.hostname) ||
+      !/^\/support-center(?:\/|$)/.test(url.pathname)) {
+    throw new Error('Откройте Центр поддержки');
+  }
+  const response = await chrome.runtime.sendMessage({...message, tabId: tab.id,
+    context: {uid: url.searchParams.get('uid') || '', orgId: url.searchParams.get('org_id') || ''}});
+  if (!response?.success) throw new Error(response?.error || 'Не удалось прочитать список тикетов');
+  return response;
+}
 
 // Интервал для обновления счётчиков
 let updateInterval = null;
@@ -28,13 +54,19 @@ function loadVersion() {
 // Обновление счётчика собранных тикетов
 async function updateCollectedCount() {
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'getTicketsCount' });
+    const response = await sendToActiveTab({ action: 'getTicketsCount' });
     if (response && response.count !== undefined) {
       collectedCountDiv.textContent = response.count;
-      exportBtn.disabled = response.count === 0;
+      const visible = response.visibleCount ?? response.count;
+      document.getElementById('visibleCount').textContent = visible;
+      exportBtn.title = response.count > 0 && visible === 0 ? 'Все собранные тикеты исключены фильтрами' : '';
+      exportBtn.disabled = visible === 0;
     }
   } catch (error) {
-    console.error('Support Center Helper: Ошибка получения количества тикетов:', error);
+    collectedCountDiv.textContent = '—';
+    document.getElementById('visibleCount').textContent = '—';
+    exportBtn.disabled = true;
+    exportBtn.title = error.message;
   }
 }
 
@@ -81,14 +113,14 @@ async function updateCounters() {
     }
     
     // Проверяем URL
-    if (!tab.url.includes('admin.yandex.ru') && !tab.url.includes('admin.360.yandex.ru')) {
+    if (!(tab?.url || '').includes('admin.yandex.ru') && !(tab?.url || '').includes('admin.360.yandex.ru')) {
       setCounterText(counterNoSubjectDiv, 'Откройте Центр поддержки', 'inactive');
       setCounterText(counterArchivedDiv, 'Откройте Центр поддержки', 'inactive');
       totalTicketsDiv.textContent = '—';
       return;
     }
     
-    if (!tab.url.includes('/support-center')) {
+    if (!(tab?.url || '').includes('/support-center')) {
       setCounterText(counterNoSubjectDiv, 'Откройте Центр поддержки', 'inactive');
       setCounterText(counterArchivedDiv, 'Откройте Центр поддержки', 'inactive');
       totalTicketsDiv.textContent = '—';
@@ -102,7 +134,9 @@ async function updateCounters() {
       });
       
       if (response) {
-        const { hiddenNoSubject, hiddenArchived, totalTickets, isTargetPage, isInitialized } = response;
+        const { hiddenNoSubject, hiddenArchived, totalTickets, isTicketPage, isTargetPage, isInitialized } = response;
+        document.getElementById('totalTicketsLabel').textContent = isTicketPage ?
+          'Открыта карточка тикета' : 'Строк в списке на странице:';
         
         if (!isTargetPage) {
           setCounterText(counterNoSubjectDiv, 'Не в Центре поддержки', 'inactive');
@@ -113,10 +147,12 @@ async function updateCounters() {
           setCounterText(counterArchivedDiv, 'Загрузка...', 'loading');
           totalTicketsDiv.textContent = '—';
         } else {
-          totalTicketsDiv.textContent = totalTickets || 0;
+          totalTicketsDiv.textContent = isTicketPage ? '—' : totalTickets || 0;
           
           // Обновляем счётчик "Без темы"
-          if (toggleNoSubject.checked) {
+          if (isTicketPage) {
+            setCounterText(counterNoSubjectDiv, 'Применяется в списке тикетов', 'inactive');
+          } else if (toggleNoSubject.checked) {
             setCounterText(
               counterNoSubjectDiv, 
               `Скрыто: ${hiddenNoSubject}`, 
@@ -127,7 +163,9 @@ async function updateCounters() {
           }
           
           // Обновляем счётчик архивированных
-          if (toggleArchived.checked) {
+          if (isTicketPage) {
+            setCounterText(counterArchivedDiv, 'Применяется в списке тикетов', 'inactive');
+          } else if (toggleArchived.checked) {
             setCounterText(
               counterArchivedDiv, 
               `Скрыто: ${hiddenArchived}`, 
@@ -207,7 +245,7 @@ async function exportToCSV() {
     const originalHTML = exportBtn.innerHTML;
     exportBtn.innerHTML = '<span>Подготовка...</span>';
     
-    const countResponse = await chrome.runtime.sendMessage({ action: 'getTicketsCount' });
+    const countResponse = await sendToActiveTab({ action: 'getTicketsCount' });
     
     if (countResponse && countResponse.count > 10000) {
       const confirmed = confirm(`У вас ${countResponse.count} тикетов. Экспорт может занять время. Продолжить?`);
@@ -223,7 +261,7 @@ async function exportToCSV() {
     
     console.log('Popup: Экспорт с фильтрами', { hideNoSubject, hideArchived });
     
-    const response = await chrome.runtime.sendMessage({ 
+    const response = await sendToActiveTab({
       action: 'exportTickets',
       hideNoSubject: hideNoSubject,
       hideArchived: hideArchived
@@ -257,9 +295,9 @@ async function exportToCSV() {
     }
   } catch (error) {
     console.error('Support Center Helper: Ошибка экспорта:', error);
-    showStatus('Ошибка экспорта', 'error');
+    showStatus(error.message || 'Ошибка экспорта', 'error');
   } finally {
-    exportBtn.disabled = false;
+    updateCollectedCount();
     exportBtn.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -289,8 +327,8 @@ async function saveState(feature, isEnabled) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
     // Проверяем только если вкладка с центром поддержки
-    if ((tab.url.includes('admin.yandex.ru') || tab.url.includes('admin.360.yandex.ru')) &&
-        tab.url.includes('/support-center')) {
+    if (((tab?.url || '').includes('admin.yandex.ru') || (tab?.url || '').includes('admin.360.yandex.ru')) &&
+        (tab?.url || '').includes('/support-center')) {
       try {
         await chrome.tabs.sendMessage(tab.id, {
           action: 'toggleFeature',
@@ -367,6 +405,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes[STORAGE_KEY_NAVIGATION]) {
       toggleNavigation.checked = changes[STORAGE_KEY_NAVIGATION].newValue;
     }
+    // Refresh once even when disabling the last filter stops the polling timer.
+    updateCollectedCount();
+    updateCounters();
     
     // Управляем автообновлением
     if (toggleNoSubject.checked || toggleArchived.checked) {
@@ -406,11 +447,11 @@ document.addEventListener('visibilitychange', () => {
 // Очистка собранных тикетов
 clearBtn.addEventListener('click', async () => {
   try {
-    await chrome.runtime.sendMessage({ action: 'clearTickets' });
+    await sendToActiveTab({ action: 'clearTickets' });
     updateCollectedCount();
   } catch (error) {
     console.error('Support Center Helper: Ошибка очистки:', error);
-    showStatus('Ошибка очистки', 'error');
+    showStatus(error.message || 'Ошибка очистки', 'error');
   }
 });
 

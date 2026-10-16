@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Support Center Helper",
-  "version": "2.4",
+  "version": "2.5.4",
   "description": "Расширение для работы с Support Center",
   "permissions": [
     "storage",
@@ -31,8 +31,15 @@
         "https://admin.yandex.ru/*",
         "https://admin.360.yandex.ru/*"
       ],
-      "js": ["injector.js"],
+      "js": [
+        "navigation.js",
+        "content.js"
+      ],
+      "css": [
+        "navigation.css"
+      ],
       "run_at": "document_start",
+      "world": "ISOLATED",
       "all_frames": false
     },
     {
@@ -40,24 +47,18 @@
         "https://admin.yandex.ru/*",
         "https://admin.360.yandex.ru/*"
       ],
-      "js": ["content.js"],
-      "css": ["navigation.css"],
-      "run_at": "document_end",
+      "js": [
+        "interceptor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN",
       "all_frames": false
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["interceptor.js", "navigation.js"],
-      "matches": [
-        "https://admin.yandex.ru/*",
-        "https://admin.360.yandex.ru/*"
-      ]
     }
   ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "minimum_chrome_version": "111"
 }
