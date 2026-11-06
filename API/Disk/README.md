@@ -30,3 +30,4 @@
 - [delete_disk_v3.ps1](https://github.com/TAM-WD/360/blob/main/API/Disk/delete_disk_v3.ps1) - тихое удаление старой EXE-версии ПО Yandex Disk 3.x из всех локальных профилей пользователей с последующей очисткой следов установки
 - [external_share_scanner.py](https://github.com/TAM-WD/360/blob/main/API/Disk/external_share_scanner.py) - получение публичных ссылок пользователей, расшаренных вовне
 - [compare_shared_disks.py](https://github.com/TAM-WD/360/blob/main/API/Disk/compare_shared_disks.py) - сравнение файловой структуры двух Общих Дисков
+- [MailCleaner-1.0.4-Windows-x64.zip](https://github.com/TAM-WD/360/blob/main/API/Disk/MailCleaner-1.0.4-Windows-x64.zip) - Windows приложение, которое позволяет централизованно находить и удалять письма из почтовых ящиков сотрудников
