@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Переговорные · экспорт</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header><div class="mark" aria-hidden="true">↗</div><span>ЯНДЕКС 360 · КАТАЛОГ</span><span class="local">Локальная выгрузка</span></header>
+    <section class="intro"><p class="eyebrow">ПЕРЕГОВОРНЫЕ</p><h1>Все комнаты.<br>В одной таблице.</h1><p class="lead">Название, город, расположение, вместимость, почта,<br class="wide"> описание, активация и остальные параметры каталога.</p></section>
+    <section class="card source-card" aria-labelledby="source-title">
+      <div class="section-head"><div><p class="step">01 / ИСТОЧНИК</p><h2 id="source-title">Получить каталог</h2></div><span id="connection" class="badge">Проверяем вкладку…</span></div>
+      <div class="controls"><label class="field">Организация<select id="organization"><option value="">Определяется по вкладке админки</option></select></label><label class="field manual-field">ID организации <span>если нет в списке</span><input id="org-id" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off" placeholder="Из адреса или настроек админки"></label><button id="load" class="primary">Загрузить из админки <span>↗</span></button></div>
+      <p class="hint">На исходной вкладке должна быть открыта админка <strong>admin.yandex.ru</strong> с выбранной организацией.</p>
+    </section>
+    <p id="status" class="status" role="status" aria-live="polite">Подготавливаем источник…</p>
+    <section id="result" class="card result-card" hidden aria-labelledby="result-title">
+      <div class="section-head"><div><p class="step">02 / ВЫГРУЗКА</p><h2 id="result-title">Каталог готов</h2><p id="summary" class="subtle"></p></div><div class="download-actions"><button id="xlsx" class="primary">Скачать XLSX ↓</button><button id="csv" class="secondary">CSV ↓</button><button id="json" class="secondary">JSON · все поля ↓</button></div></div>
+      <div id="warnings" class="warnings" hidden></div>
+      <div class="preview-caption"><span>ПРЕДПРОСМОТР · ПЕРВЫЕ 20 КОМНАТ</span><span id="column-count"></span></div>
+      <div class="table-wrap"><table><thead id="head"></thead><tbody id="body"></tbody></table></div>
+      <p class="hint">«Активирована в Телемосте» — подключена к видеовстречам. «Доступна для бронирования» — отдельный статус.<br>В файлы попадают все комнаты и все доступные поля. Пустые значения означают, что источник не указал параметр.</p>
+    </section>
+  </main>
+  <script type="module" src="export.mjs"></script>
+</body>
+</html>
