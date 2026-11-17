@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Выгрузка встреч Телемоста</title>
+    <link rel="stylesheet" href="ui.css">
+    <script type="module" src="runner.js"></script>
+  </head>
+  <body class="runner-page">
+    <main class="runner-shell">
+      <header class="page-header">
+        <span class="product-mark" aria-hidden="true">Т</span>
+        <div>
+          <p class="eyebrow">Аналитика Телемоста</p>
+          <h1>Выгрузка встреч</h1>
+        </div>
+      </header>
+
+      <section class="job-card" aria-labelledby="statusTitle">
+        <div class="job-heading">
+          <div>
+            <span id="statusBadge" class="status-badge">Подготовка</span>
+            <h2 id="statusTitle">Готовлю сбор данных…</h2>
+          </div>
+          <span id="activityIndicator" class="activity-indicator" aria-hidden="true"></span>
+        </div>
+        <p id="jobSummary" class="job-summary"></p>
+        <p id="progressMessage" class="progress-message" role="status" aria-live="polite">Проверяю параметры выгрузки.</p>
+        <progress id="progress" aria-label="Ход сбора"></progress>
+        <p id="progressDetail" class="small-text progress-detail"></p>
+
+        <dl class="count-grid" aria-label="Собранные данные">
+          <div><dt>Встречи</dt><dd id="meetingCount">0</dd></div>
+          <div><dt>Участники встреч</dt><dd id="participantCount">0</dd></div>
+          <div><dt>Наборов замеров</dt><dd id="eventCount">0</dd></div>
+          <div><dt>Ошибки</dt><dd id="errorCount">0</dd></div>
+        </dl>
+
+        <p id="resultMessage" class="result-message" aria-live="polite" hidden></p>
+        <p id="errorMessage" class="error-panel" role="alert" hidden></p>
+        <div class="job-actions">
+          <button id="downloadButton" class="primary-button" type="button" hidden>Скачать XLSX</button>
+          <button id="cancelButton" class="secondary-button" type="button">Остановить сбор</button>
+        </div>
+      </section>
+
+      <aside class="runner-note">
+        <p id="keepOpenNote"><strong>Оставьте открытыми эту вкладку и вкладку аналитики.</strong> Не переключайте организацию в кабинете до окончания. При закрытии вкладки сбора продолжить его не получится.</p>
+        <p>Период — по началу встречи. Обе выбранные даты включены. Время в Excel выводится в выбранном часовом поясе.</p>
+        <p>В записанном API нет логинов и числа входов. Отдельно выгружаются имена, ID участников и разрывы связи, если сервер их вернул.</p>
+        <p>Ошибки сбора и параметры выгрузки доступны на отдельных листах XLSX.</p>
+      </aside>
+    </main>
+  </body>
+</html>

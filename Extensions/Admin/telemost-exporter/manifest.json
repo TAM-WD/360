@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Телемост — экспорт аналитики",
+  "version": "0.2.0",
+  "description": "Выгрузка доступной администратору аналитики встреч Яндекс 360 в XLSX.",
+  "minimum_chrome_version": "120",
+  "permissions": ["storage", "scripting", "webRequest"],
+  "host_permissions": [
+    "https://admin.yandex.ru/*",
+    "https://admin.telemost.yandex.ru/*",
+    "https://cloud-api.yandex.ru/*"
+  ],
+  "action": {"default_popup": "popup.html", "default_title": "Экспорт Телемоста"},
+  "background": {"service_worker": "background.js", "type": "module"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'none'; connect-src 'self' https://cloud-api.yandex.ru"}
+}

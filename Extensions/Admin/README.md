@@ -3,3 +3,4 @@
 - [logs_time](https://github.com/TAM-WD/360/blob/main/Extensions/Admin/logs_time) - добавляет фильтр по времени на страницах аудит логов.
 - [support-center-helper](https://github.com/TAM-WD/360/blob/main/Extensions/Admin/support-center-helper) - расширение возможностей центра поддержки.
 - [meeting-room-exporter](https://github.com/TAM-WD/360/tree/main/Extensions/Admin/meeting-room-exporter) - выгрузка каталога переговорных из админки в XLSX, CSV и JSON.
+- [telemost-exporter](https://github.com/TAM-WD/360/tree/main/Extensions/Admin/telemost-exporter) - выгрузка аналитики встреч Телемоста из кабинета организации в XLSX.

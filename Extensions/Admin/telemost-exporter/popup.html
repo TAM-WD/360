@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Встречи Телемоста — Excel</title>
+    <link rel="stylesheet" href="ui.css">
+    <script type="module" src="popup.js"></script>
+  </head>
+  <body class="popup-page">
+    <main class="popup-shell">
+      <header class="page-header">
+        <span class="product-mark" aria-hidden="true">Т</span>
+        <div>
+          <p class="eyebrow">Аналитика Телемоста</p>
+          <h1>Встречи в Excel</h1>
+        </div>
+      </header>
+
+      <section class="connection-panel" aria-label="Подключение к кабинету">
+        <div class="connection-heading">
+          <span id="connectionState" class="state-label" aria-live="polite">Проверяю кабинет…</span>
+          <button id="refreshContext" class="text-button" type="button">Обновить</button>
+        </div>
+        <p id="connectionMessage" class="small-text">Ищу открытую аналитику встреч.</p>
+        <button id="openAnalytics" class="secondary-button small-button" type="button" hidden>Открыть аналитику</button>
+      </section>
+
+      <form id="exportForm" novalidate>
+        <div class="field">
+          <label for="orgId">ID организации</label>
+          <input id="orgId" name="orgId" type="text" required autocomplete="off" spellcheck="false" placeholder="Из открытого кабинета">
+          <p class="field-hint">Организация должна совпадать с открытой аналитикой.</p>
+        </div>
+
+        <fieldset class="date-fieldset">
+          <legend>Период выгрузки</legend>
+          <div class="date-grid">
+            <div class="field">
+              <label for="startDate">С</label>
+              <input id="startDate" name="startDate" type="date" required>
+            </div>
+            <div class="field">
+              <label for="endDate">По</label>
+              <input id="endDate" name="endDate" type="date" required>
+            </div>
+          </div>
+          <p class="field-hint">Обе даты включительно. Период — по началу встречи.</p>
+        </fieldset>
+
+        <div class="field">
+          <label for="timeZone">Часовой пояс</label>
+          <select id="timeZone" name="timeZone">
+            <option value="Europe/Moscow">Москва · UTC+3</option>
+            <option value="UTC">UTC · UTC+0</option>
+          </select>
+        </div>
+
+        <fieldset class="options-fieldset">
+          <legend>Дополнительные данные</legend>
+          <label class="checkbox-row" for="includeIPs">
+            <input id="includeIPs" name="includeIPs" type="checkbox">
+            <span>IP-адреса<span class="checkbox-hint">Если доступны в ответах сервера</span></span>
+          </label>
+          <label class="checkbox-row" for="includeEvents">
+            <input id="includeEvents" name="includeEvents" type="checkbox">
+            <span>Подробные замеры качества<span class="checkbox-hint">Увеличивают время сбора и размер файла</span></span>
+          </label>
+        </fieldset>
+
+        <p id="formMessage" class="form-message" role="status" aria-live="polite" hidden></p>
+        <button id="startExport" class="primary-button" type="submit" disabled>Скачать XLSX</button>
+        <p class="small-text action-hint">Сбор откроется в отдельной вкладке. Оставьте её открытой до завершения.</p>
+      </form>
+
+      <aside class="data-note">
+        В записанном API нет логинов и числа входов. Отдельно выгружаются имена, ID участников и разрывы связи, если сервер их вернул.
+      </aside>
+    </main>
+  </body>
+</html>
