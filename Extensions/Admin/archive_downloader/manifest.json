@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Yandex Admin Audit & Stash Helper",
+  "version": "1.3",
+  "description": "Автоматизация поиска аудит-лога, архива и пересылки писем",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "cookies",
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://admin.yandex.ru/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Yandex Admin Helper"
+  }
+}

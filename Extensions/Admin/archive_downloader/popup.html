@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 500px; font-family: Arial, sans-serif; padding: 10px; }
+    h2 { margin-top: 0; }
+    .section { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; }
+    .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+    .warning-critical { background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+    .warning-icon { color: #856404; }
+    .critical-icon { color: #721c24; }
+    label { display: block; margin: 5px 0 2px; }
+    input[type="text"], input[type="email"], input[type="date"], select { width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box; }
+    button { width: 100%; margin-bottom: 5px; padding: 8px; border: none; cursor: pointer; color: white; border-radius: 4px; }
+    button:hover { opacity: 0.8; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    button.primary { background: #2196F3; }
+    button.success { background: #4CAF50; }
+    button.danger { background: #f44336; }
+    button.info { background: #008CBA; }
+    button.warning-btn { background: #ff9800; }
+    #status { color: green; margin-top: 10px; font-weight: bold; }
+    #error { color: red; margin-top: 10px; font-weight: bold; }
+    .log-area { background: #f4f4f4; padding: 10px; margin-top: 10px; height: 150px; overflow-y: auto; border: 1px solid #ddd; display: none; font-size: 12px; }
+    .date-range { display: flex; gap: 10px; }
+    .date-range > div { flex: 1; }
+    .token-status { padding: 8px; margin-bottom: 10px; border-radius: 4px; font-size: 12px; }
+    .token-status.valid { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .token-status.invalid { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    
+    .event-types { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 8px; 
+      margin: 10px 0; 
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: #fafafa;
+    }
+    .event-type-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px;
+      padding: 5px;
+      background: white;
+      border-radius: 4px;
+    }
+    .event-type-item input { 
+      width: auto; 
+      margin: 0; 
+      cursor: pointer;
+    }
+    .event-type-item label { 
+      margin: 0; 
+      cursor: pointer;
+      font-size: 13px;
+      flex: 1;
+    }
+    .event-type-item .event-desc {
+      font-size: 11px;
+      color: #666;
+      display: block;
+      margin-top: 2px;
+    }
+    .select-all-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #e3f2fd;
+      border-radius: 4px;
+    }
+    .select-all-container input {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+    .select-all-container label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: bold;
+      color: #1565c0;
+    }
+    
+    hr.divider {
+        border: none;
+        border-top: 1px dashed #ccc;
+        margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>Яндекс Админка — помощник</h2>
+
+  <div class="warning-critical">
+    <strong class="critical-icon">⚠️ ВАЖНО!</strong><br><br>
+    <strong>Перед использованием расширения:</strong><br>
+    1. Откройте <a href="https://admin.yandex.ru/stash" target="_blank">Архив писем</a><br>
+    2. Пройдите проверку номера телефона (если потребуется)<br>
+    3. Только после этого возвращайтесь к расширению<br><br>
+    <em>Без проверки поиск в архиве не будет работать!</em>
+  </div>
+
+  <div class="warning">
+    <strong class="warning-icon">⚠️ Не закрывайте это окно</strong> во время выполнения операций. Данные сохраняются автоматически.
+  </div>
+
+  <div id="token-status" class="token-status invalid">
+    🔑 Токен сессии: Не получен (нажмите "Инициализировать сессию")
+  </div>
+
+  <button id="reset-session" class="danger">🔄 Сбросить сессию и результаты поиска</button>
+  
+  <hr class="divider">
+
+  <div class="section">
+    <h3>Настройки</h3>
+    <label>Org ID (обязательно)</label>
+    <input type="text" id="org-id" placeholder="ID организации">
+    <label>UID сотрудника (обязательно)</label>
+    <input type="text" id="audit-uid" placeholder="UID сотрудника">
+    <button id="init-session" class="primary">🔑 Инициализировать сессию</button>
+  </div>
+
+  <div class="section">
+    <h3>Поиск аудит-лога</h3>
+    <label>Период поиска</label>
+    <div class="date-range">
+      <div>
+        <label>Дата начала</label>
+        <input type="date" id="audit-date-from">
+      </div>
+      <div>
+        <label>Дата окончания</label>
+        <input type="date" id="audit-date-to">
+      </div>
+    </div>
+    
+    <label>Типы событий</label>
+    <div class="select-all-container">
+      <input type="checkbox" id="select-all-events">
+      <label for="select-all-events">✓ Выбрать все события</label>
+    </div>
+    
+    <div class="event-types" id="event-types-container"></div>
+    
+    <button id="audit-search" class="success">🔍 Найти события</button>
+    <button id="audit-export">📥 Экспорт событий в XLSX</button>
+  </div>
+
+  <div class="section">
+    <h3>Архив писем и пересылка</h3>
+    <label>Ящик для пересылки (куда)</label>
+    <input type="email" id="forward-to" placeholder="target@example.com">
+    <button id="stash-search">📦 Создать поиск в архиве</button>
+    
+    <button id="check-forward-count" class="warning-btn" style="display:none;">🔎 Проверить количество писем для пересылки</button>
+    
+    <button id="stash-forward" style="display:none; background: #4CAF50;">📤 Переслать найденные письма</button>
+    
+    <button id="export-stash-messages" class="info" style="display:none;">📥 Экспорт всех писем из архива в XLSX</button>
+    <button id="export-forward-report" class="danger" style="display:none;">📥 Экспорт отчета пересылки в XLSX</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="error"></div>
+  <div class="log-area" id="log-area"></div>
+
+  <script src="xlsx.full.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
