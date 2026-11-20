@@ -15,7 +15,7 @@
 
 ## 1. Быстрая проверка без Docker
 
-Нужен Python 3.12 или 3.13. Команды выполняются из папки проекта, где находится `manage.py`.
+Нужен Python 3.12 или 3.13. В репозитории `TAM-WD/360` команды выполняются из `misc/get-access-to-file`, где находится `manage.py`.
 
 ```bash
 python3 -m venv .venv
@@ -245,7 +245,7 @@ python manage.py makemigrations --check --dry-run
 docker compose exec web python manage.py test
 ```
 
-У пользователя тестовой БД должно быть право создавать тестовую базу; пользователь из демо Compose его имеет. CI в `.github/workflows/tests.yml` также запускает набор на PostgreSQL. CI здесь настроен, но его выполнение требует размещения проекта в GitHub.
+У пользователя тестовой БД должно быть право создавать тестовую базу; пользователь из демо Compose его имеет. Workflow [Get access to file tests](../../.github/workflows/get-access-to-file-tests.yml) расположен в корне репозитория `360` и запускает набор на PostgreSQL из папки `misc/get-access-to-file`. Результат каждого прогона проверяйте во вкладке Actions; наличие файла само по себе не означает успешного выполнения.
 
 ## 9. Эксплуатация и ограничения
 
