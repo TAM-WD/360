@@ -1,0 +1,55 @@
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DB_HOST: db
+    DATA_DIR: /app/data
+  volumes:
+    - app-data:/app/data
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-disk_access}
+      POSTGRES_USER: ${DB_USER:-disk_access}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  init:
+    <<: *app
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py sync_directory --if-empty"]
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    <<: *app
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+  worker:
+    <<: *app
+    command: ["python", "manage.py", "run_mail_worker"]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+volumes:
+  postgres-data:
+  app-data:

@@ -1,0 +1,5 @@
+[
+  {"id": "1001", "name": {"first": "Анна", "last": "Соколова"}, "email": "anna.sokolova@company.example", "is_enabled": true, "is_dismissed": false, "is_robot": false},
+  {"id": "1002", "name": {"first": "Алексей", "last": "Морозов"}, "email": "alexey.morozov@company.example", "is_enabled": true, "is_dismissed": false, "is_robot": false},
+  {"id": "1003", "name": {"first": "Павел", "last": "Орлов"}, "email": "pavel.orlov@company.example", "is_enabled": false, "is_dismissed": true, "is_robot": false}
+]

@@ -1,0 +1,111 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Поиск владельца ссылки</title>
+  <link rel="stylesheet" href="{% static 'portal/app.css' %}?v=20261106-3">
+  <script src="{% static 'portal/app.js' %}?v=20261106-3" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <a class="brand" href="/" aria-label="Поиск владельца ссылки — главная">
+        <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7h6l2 2h8v10H4V7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="m10 12 4 2-4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="brand-label">Поиск владельца ссылки</span>
+      </a>
+      <span class="header-label"><span class="dot"></span>{% if demo_mode %}Демонстрационный режим{% else %}Сервис {{ organization_label }}{% endif %}</span>
+    </header>
+
+    <main>
+      <div class="intro">
+        <h1>Найдите владельца.<br><span>Запросите доступ.</span></h1>
+        <p class="lead">Вставьте ссылку на файл в Яндекс Диске сотрудника {{ organization_label }} — мы найдём владельца<br class="desktop-break"> и поможем отправить ему запрос.</p>
+      </div>
+
+      <div class="layout">
+        <section class="workspace" aria-label="Поиск и запрос доступа">
+          <ol class="steps" aria-label="Этапы запроса">
+            <li class="active" id="step-1"><span>01</span> Вставьте ссылку</li>
+            <li id="step-2"><span>02</span> Узнайте владельца</li>
+            <li id="step-3"><span>03</span> Сделайте запрос</li>
+          </ol>
+          <div class="card-body">
+            {% if demo_mode %}<div class="mode-note"><span class="mode-tag">ДЕМО</span> Используйте примеры ниже. Данные владельцев тестовые.</div>{% endif %}
+            {% if file_mail %}<p class="file-note">Тестовая отправка: письма сохраняются в файл и не уходят получателям.</p>{% endif %}
+            <form id="lookup-form" novalidate>
+              {% csrf_token %}
+              <label for="resource-url">Ссылка на ресурс</label>
+              <div class="search-row">
+                <input id="resource-url" name="resource_url" type="url" inputmode="url" aria-describedby="resource-hint lookup-error" placeholder="https://disk.360.yandex.ru/i/…" maxlength="2048" required autocomplete="off" spellcheck="false">
+                <button class="button primary" type="submit" id="lookup-button">Найти владельца <span aria-hidden="true">↗</span></button>
+              </div>
+              <p class="field-hint" id="resource-hint">Скопируйте ссылку через «Поделиться» в Яндекс Диске.</p>
+            </form>
+
+            {% if demo_mode %}
+            <div class="demo-examples" aria-label="Тестовые ссылки">
+              <span>Попробуйте:</span>
+              <button type="button" data-example="demo-file">Обычный файл</button>
+              <button type="button" data-example="demo-new">Новый сотрудник</button>
+              <button type="button" data-example="demo-missing">Нет в каталоге</button>
+              <button type="button" data-example="demo-blocked">Неактивный владелец</button>
+              <button type="button" data-example="demo-external">Внешний ресурс</button>
+            </div>
+            {% endif %}
+
+            <div id="lookup-progress" class="progress" hidden>
+              <span role="status">Определяем владельца и проверяем каталог…</span>
+              <button id="cancel-lookup" type="button" class="text-button">Отменить поиск</button>
+            </div>
+            <p id="lookup-feedback" class="field-hint" role="status" hidden></p>
+            <div id="lookup-error" class="notice error" role="alert" hidden></div>
+
+            <section id="result" class="result" aria-label="Результат поиска" hidden>
+              <div class="owner-card">
+                <div class="avatar" id="owner-initial" aria-hidden="true">А</div>
+                <div class="owner-details"><p class="micro-label">ВЛАДЕЛЕЦ РЕСУРСА</p><h2 id="owner-name"></h2><p>Сотрудник {{ organization_label }}</p></div>
+                <span class="found-label">Найден</span>
+              </div>
+              <a id="resource-link" class="resource-link" target="_blank" rel="noopener noreferrer"></a>
+              <div id="owner-warning" class="notice" role="status" hidden></div>
+
+              <form id="request-form" novalidate hidden>
+                <div class="section-heading"><h2>Кому нужен доступ?</h2><p>Владелец получит письмо с вашими контактами.</p></div>
+                <div class="form-grid">
+                  <div><label for="requester-name">Ваше имя</label><input id="requester-name" name="requester_name" maxlength="150" autocomplete="name" placeholder="Имя и фамилия" required></div>
+                  <div><label for="account-email">Почта аккаунта Яндекса</label><input id="account-email" name="account_email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com" required></div>
+                  <div><label for="rights">Какой доступ нужен</label><select id="rights" name="rights"><option value="read">Просмотр</option><option value="write">Редактирование</option></select></div>
+                  <div><label for="contact-email">Другая почта для ответа <span>необязательно</span></label><input id="contact-email" name="contact_email" type="email" maxlength="254" placeholder="Если отличается от аккаунта"></div>
+                </div>
+                <label for="comment">Комментарий владельцу <span>необязательно</span></label>
+                <textarea id="comment" name="comment" maxlength="2000" rows="3" placeholder="Например: файл нужен для подготовки квартального отчёта"></textarea>
+                <div class="account-note"><span aria-hidden="true">i</span><p>Для получения доступа нужен аккаунт Яндекса. Укажите почту аккаунта Яндекса, на которую будет предоставлен доступ. Решение принимает владелец ресурса.</p></div>
+                <div id="request-error" class="notice error" role="alert" hidden></div>
+                <div class="submit-row"><p>Имя и контакты будут переданы владельцу.<br>Сервис не проверяет личность заявителя.</p><button class="button primary" id="request-button" type="submit">Отправить запрос <span aria-hidden="true">→</span></button></div>
+              </form>
+            </section>
+
+            <section id="request-status" class="status-card" aria-live="polite" hidden>
+              <div class="status-icon" aria-hidden="true">↗</div>
+              <div><h2 id="status-label"></h2><p id="status-message"></p><p class="request-number">Заявка <span id="request-number"></span></p><button class="text-button" id="refresh-status" type="button">Обновить статус</button></div>
+            </section>
+          </div>
+        </section>
+
+        <aside class="aside">
+          <div class="aside-icon" aria-hidden="true">↗</div>
+          <h2>Ссылка есть, но доступа пока нет?</h2>
+          <p>Отправьте запрос прямо владельцу файла.</p>
+          <ul class="features"><li><span>✓</span> Вход в сервис не требуется</li><li><span>✓</span> Подходит сотрудникам и подрядчикам</li><li><span>✓</span> Ответ — на вашу почту</li></ul>
+          <div class="aside-divider"></div>
+          <p class="aside-footnote">Сервис работает только с ресурсами {{ organization_label }}. Доступ выдаёт владелец в Яндекс Диске.</p>
+        </aside>
+      </div>
+      <noscript><p class="notice error">Для работы формы включите JavaScript.</p></noscript>
+    </main>
+  </div>
+</body>
+</html>

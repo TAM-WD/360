@@ -1,0 +1,8 @@
+# Caddy запускается на хосте; порт контейнера опубликован только на loopback.
+# Замените домен, направьте DNS на сервер и разрешите входящие 80/443.
+access.example.com {
+    reverse_proxy 127.0.0.1:8000 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}
