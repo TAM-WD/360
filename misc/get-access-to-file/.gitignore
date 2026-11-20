@@ -1,0 +1,27 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+data/
+staticfiles/
+.coverage
+.pytest_cache/
+.DS_Store
+
+# Additional local settings and generated files
+.env.*
+!.env.example
+*.sqlite3
+*.sqlite3-*
+*.log
+*.dump
+*.bundle
+backups/
+demo-mail/
+*.pem
+*.key
+
+# Keep project tests despite the repository-level tests/ rule
+!portal/tests/
+!portal/tests/**
